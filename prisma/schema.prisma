@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CowStatus {
+  active
+  pregnant
+  sick
+  retired
+}
+
+enum ReminderPriority {
+  low
+  medium
+  high
+}
+
+enum ReminderType {
+  injection
+  checkup
+  ai
+  custom
+}
+
+model Cow {
+  id            String     @id @default(cuid())
+  name          String
+  breed         String
+  age           Int
+  lastSyncDate  DateTime
+  healthNotes   String?
+  status        CowStatus  @default(active)
+  reminders     Reminder[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model SyncMethod {
+  id                   String     @id @default(cuid())
+  name                 String
+  description          String?
+  duration             Int
+  isCustom             Boolean   @default(false)
+  hasWorkforceSettings Boolean   @default(false)
+  steps                SyncStep[]
+  reminders            Reminder[]
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+}
+
+model SyncStep {
+  id                    String     @id @default(cuid())
+  syncMethod            SyncMethod @relation(fields: [syncMethodId], references: [id], onDelete: Cascade)
+  syncMethodId          String
+  day                   Int
+  title                 String
+  description           String?
+  hormoneType           String?
+  notes                 String?
+  workforceRequirements Json?
+  reminders             Reminder[]
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+}
+
+model Reminder {
+  id                String          @id @default(cuid())
+  cow               Cow             @relation(fields: [cowId], references: [id], onDelete: Cascade)
+  cowId             String
+  title             String
+  description       String?
+  dueDate           DateTime
+  completed         Boolean         @default(false)
+  priority          ReminderPriority @default(medium)
+  type              ReminderType
+  syncMethod        SyncMethod?     @relation(fields: [syncMethodId], references: [id], onDelete: SetNull)
+  syncMethodId      String?
+  syncStep          SyncStep?       @relation(fields: [syncStepId], references: [id], onDelete: SetNull)
+  syncStepId        String?
+  estimatedCowCount Int?
+  workforceSnapshot Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
