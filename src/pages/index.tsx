@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Sidebar from '../components/layout/Sidebar';
 import DashboardStats from '../components/dashboard/DashboardStats';
 import RecentReminders from '../components/dashboard/RecentReminders';
@@ -10,15 +11,15 @@ import SyncMethodForm from '../components/sync/SyncMethodForm';
 import WorkforceSetup from '../components/sync/WorkforceSetup';
 import AnalyticsCharts from '../components/analytics/AnalyticsCharts';
 import ReminderCalendar from '../components/reminders/ReminderCalendar';
-import { mockCows, mockReminders, predefinedSyncMethods, mockAnalytics } from '../data/mockData';
-import { Cow, SyncMethod, Reminder } from '../types';
+import { Cow, SyncMethod, Reminder, Analytics } from '../types';
 import { ReminderService } from '../services/ReminderService';
 
 const Index = () => {
+  const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState('dashboard');
-  const [cows, setCows] = useState(mockCows);
-  const [reminders, setReminders] = useState(mockReminders);
-  const [syncMethods, setSyncMethods] = useState(predefinedSyncMethods);
+  const [cows, setCows] = useState<Cow[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [syncMethods, setSyncMethods] = useState<SyncMethod[]>([]);
   const [selectedCow, setSelectedCow] = useState<Cow | null>(null);
   const [editingCow, setEditingCow] = useState<Cow | null>(null);
   const [showCowForm, setShowCowForm] = useState(false);
@@ -27,78 +28,230 @@ const Index = () => {
   const [workforceSetupMethod, setWorkforceSetupMethod] = useState<SyncMethod | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  const handleCompleteReminder = (id: string) => {
-    setReminders(prev => {
-      const updated = prev.map(reminder => 
-        reminder.id === id ? { ...reminder, completed: true } : reminder
-      );
-      // Update ReminderService with new data
-      ReminderService.updateReminders(updated);
-      return updated;
-    });
-    console.log(`Reminder ${id} marked as completed`);
-  };
-
-  const handleSaveCow = (cowData: Omit<Cow, 'id' | 'reminders'>) => {
-    if (editingCow) {
-      setCows(prev => prev.map(cow => 
-        cow.id === editingCow.id 
-          ? { ...cow, ...cowData }
-          : cow
-      ));
-      console.log('Cow updated:', cowData);
-    } else {
-      const newCow: Cow = {
-        ...cowData,
-        id: Date.now().toString(),
-        reminders: []
-      };
-      setCows(prev => [...prev, newCow]);
-      console.log('New cow added:', newCow);
+  const fetcher = useCallback(async <T,>(url: string): Promise<T> => {
+    const response = await fetch(url);
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || `Request to ${url} failed`);
     }
-    setShowCowForm(false);
-    setEditingCow(null);
-  };
+    return response.json() as Promise<T>;
+  }, []);
 
-  const handleSaveSyncMethod = (methodData: Omit<SyncMethod, 'id'>) => {
-    if (editingSyncMethod) {
-      setSyncMethods(prev => prev.map(method => 
-        method.id === editingSyncMethod.id 
-          ? { ...method, ...methodData }
-          : method
-      ));
-      console.log('Sync method updated:', methodData);
-    } else {
-      const newMethod: SyncMethod = {
-        ...methodData,
-        id: Date.now().toString()
-      };
-      setSyncMethods(prev => [...prev, newMethod]);
-      console.log('New sync method created:', newMethod);
+  const cowsQuery = useQuery<Cow[]>({
+    queryKey: ['cows'],
+    queryFn: () => fetcher<Cow[]>('/api/cows'),
+  });
+
+  const remindersQuery = useQuery<Reminder[]>({
+    queryKey: ['reminders'],
+    queryFn: () => fetcher<Reminder[]>('/api/reminders'),
+  });
+
+  const syncMethodsQuery = useQuery<SyncMethod[]>({
+    queryKey: ['sync-methods'],
+    queryFn: () => fetcher<SyncMethod[]>('/api/sync-methods'),
+  });
+
+  const analyticsQuery = useQuery<Analytics>({
+    queryKey: ['analytics'],
+    queryFn: () => fetcher<Analytics>('/api/analytics'),
+  });
+
+  useEffect(() => {
+    if (cowsQuery.data) {
+      setCows(cowsQuery.data);
     }
-    setShowSyncMethodForm(false);
-    setEditingSyncMethod(null);
+  }, [cowsQuery.data]);
+
+  useEffect(() => {
+    if (remindersQuery.data) {
+      setReminders(remindersQuery.data);
+    }
+  }, [remindersQuery.data]);
+
+  useEffect(() => {
+    if (syncMethodsQuery.data) {
+      setSyncMethods(syncMethodsQuery.data);
+    }
+  }, [syncMethodsQuery.data]);
+
+  useEffect(() => {
+    ReminderService.initialize(reminders, cows, syncMethods);
+  }, [reminders, cows, syncMethods]);
+
+  useEffect(() => {
+    if (!selectedCow) {
+      return;
+    }
+
+    const updated = cows.find((cow) => cow.id === selectedCow.id);
+    if (updated && updated !== selectedCow) {
+      setSelectedCow(updated);
+    }
+  }, [cows, selectedCow]);
+
+  const isLoading = cowsQuery.isLoading || remindersQuery.isLoading || syncMethodsQuery.isLoading;
+  const loadError =
+    (cowsQuery.error as Error | undefined) ||
+    (remindersQuery.error as Error | undefined) ||
+    (syncMethodsQuery.error as Error | undefined);
+
+  const analyticsData = useMemo<Analytics>(() => ({
+    totalCows: analyticsQuery.data?.totalCows ?? 0,
+    activeReminders: analyticsQuery.data?.activeReminders ?? 0,
+    completedSyncs: analyticsQuery.data?.completedSyncs ?? 0,
+    pregnancyRate: analyticsQuery.data?.pregnancyRate ?? 0,
+    complianceRate: analyticsQuery.data?.complianceRate ?? 0,
+  }), [analyticsQuery.data]);
+
+  const handleCompleteReminder = async (id: string) => {
+    try {
+      await fetch(`/api/reminders/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ completed: true }),
+      });
+
+      setReminders(prev => {
+        const updated = prev.map(reminder =>
+          reminder.id === id ? { ...reminder, completed: true } : reminder
+        );
+        ReminderService.updateReminders(updated);
+        return updated;
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['reminders'] });
+    } catch (error) {
+      console.error('Failed to complete reminder', error);
+    }
   };
 
-  const handleSaveWorkforceSetup = (method: SyncMethod) => {
-    setSyncMethods(prev => prev.map(m => 
-      m.id === method.id ? method : m
-    ));
-    setWorkforceSetupMethod(null);
-    console.log('Workforce setup saved for method:', method.name);
+  const handleSaveCow = async (cowData: Omit<Cow, 'id' | 'reminders'>) => {
+    try {
+      if (editingCow) {
+        const response = await fetch(`/api/cows/${editingCow.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(cowData),
+        });
+        const updatedCow: Cow = await response.json();
+        setCows(prev => prev.map(cow => (cow.id === updatedCow.id ? updatedCow : cow)));
+        setSelectedCow(prev => (prev && prev.id === updatedCow.id ? updatedCow : prev));
+      } else {
+        const response = await fetch('/api/cows', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(cowData),
+        });
+        const newCow: Cow = await response.json();
+        setCows(prev => [...prev, newCow]);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['cows'] });
+      setShowCowForm(false);
+      setEditingCow(null);
+    } catch (error) {
+      console.error('Failed to save cow', error);
+    }
   };
 
-  const handleDeleteSyncMethod = (id: string) => {
-    setSyncMethods(prev => prev.filter(method => method.id !== id));
-    console.log('Sync method deleted:', id);
+  const handleSaveSyncMethod = async (methodData: Omit<SyncMethod, 'id'>) => {
+    try {
+      if (editingSyncMethod) {
+        const response = await fetch(`/api/sync-methods/${editingSyncMethod.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(methodData),
+        });
+        const updatedMethod: SyncMethod = await response.json();
+        setSyncMethods(prev => prev.map(method => (method.id === updatedMethod.id ? updatedMethod : method)));
+      } else {
+        const response = await fetch('/api/sync-methods', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(methodData),
+        });
+        const newMethod: SyncMethod = await response.json();
+        setSyncMethods(prev => [...prev, newMethod]);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['sync-methods'] });
+      setShowSyncMethodForm(false);
+      setEditingSyncMethod(null);
+    } catch (error) {
+      console.error('Failed to save synchronization method', error);
+    }
+  };
+
+  const handleSaveWorkforceSetup = async (method: SyncMethod) => {
+    try {
+      const response = await fetch(`/api/sync-methods/${method.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: method.name,
+          description: method.description,
+          duration: method.duration,
+          isCustom: method.isCustom,
+          hasWorkforceSettings: method.hasWorkforceSettings,
+          steps: method.steps,
+        }),
+      });
+
+      const updatedMethod: SyncMethod = await response.json();
+      setSyncMethods(prev => prev.map(m => (m.id === updatedMethod.id ? updatedMethod : m)));
+      setWorkforceSetupMethod(null);
+      queryClient.invalidateQueries({ queryKey: ['sync-methods'] });
+    } catch (error) {
+      console.error('Failed to save workforce setup', error);
+    }
+  };
+
+  const handleDeleteSyncMethod = async (id: string) => {
+    try {
+      await fetch(`/api/sync-methods/${id}`, {
+        method: 'DELETE',
+      });
+      setSyncMethods(prev => prev.filter(method => method.id !== id));
+      queryClient.invalidateQueries({ queryKey: ['sync-methods'] });
+    } catch (error) {
+      console.error('Failed to delete sync method', error);
+    }
   };
 
   const handleSelectSyncMethod = (method: SyncMethod) => {
-    console.log('Selected sync method for application:', method);
     alert(`Protocol "${method.name}" selected. This would open a dialog to apply to selected cows.`);
   };
 
   const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="vet-card">
+          <p className="text-gray-600">Loading herd data...</p>
+        </div>
+      );
+    }
+
+    if (loadError) {
+      return (
+        <div className="vet-card">
+          <p className="text-red-600">{loadError.message || 'Unable to load herd data.'}</p>
+        </div>
+      );
+    }
+
     if (showCowForm) {
       return (
         <CowForm
@@ -143,10 +296,10 @@ const Index = () => {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
               <p className="text-gray-600">Overview of your cattle synchronization management</p>
             </div>
-            <DashboardStats analytics={mockAnalytics} />
+            <DashboardStats analytics={analyticsData} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <RecentReminders 
-                reminders={reminders} 
+              <RecentReminders
+                reminders={reminders}
                 cows={cows}
                 syncMethods={syncMethods}
                 onCompleteReminder={handleCompleteReminder}
