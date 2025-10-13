@@ -17,7 +17,7 @@ const navigationItems = [
 
 const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => {
   return (
-    <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col">
+    <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col fixed left-0 top-0">
       <div className="p-6 border-b border-gray-200">
         <h1 className="text-2xl font-bold text-vet-blue">CattleSync Pro</h1>
         <p className="text-sm text-gray-600 mt-1">Veterinary Management</p>

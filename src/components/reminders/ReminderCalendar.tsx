@@ -1,16 +1,19 @@
 
 import React, { useState, useEffect } from 'react';
-import { Reminder } from '../../types';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
+import { Reminder, Cow, SyncMethod } from '../../types';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, setMonth, setYear } from 'date-fns';
 import { ReminderService } from '../../services/ReminderService';
+import ReminderDetailModal from './ReminderDetailModal';
 
 interface ReminderCalendarProps {
   reminders: Reminder[];
-  cows?: any[];
-  syncMethods?: any[];
+  cows?: Cow[];
+  syncMethods?: SyncMethod[];
   currentDate: Date;
   onDateChange: (date: Date) => void;
   onCompleteReminder?: (id: string) => void;
+  today: Date;
+  availableYears: number[];
 }
 
 const ReminderCalendar: React.FC<ReminderCalendarProps> = ({ 
@@ -19,10 +22,13 @@ const ReminderCalendar: React.FC<ReminderCalendarProps> = ({
   syncMethods = [],
   currentDate, 
   onDateChange, 
-  onCompleteReminder 
+  onCompleteReminder,
+  today,
+  availableYears 
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarReminders, setCalendarReminders] = useState<Reminder[]>([]);
+  const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null);
   
   useEffect(() => {
     // Initialize ReminderService with consistent data
@@ -55,6 +61,15 @@ const ReminderCalendar: React.FC<ReminderCalendarProps> = ({
   };
 
   const handleCompleteReminder = (id: string) => {
+    const reminder = calendarReminders.find(r => r.id === id);
+    if (!reminder) return;
+
+    // Prevent completing future tasks
+    if (new Date(reminder.dueDate) > today) {
+      alert('Cannot complete future tasks');
+      return;
+    }
+
     if (onCompleteReminder) {
       onCompleteReminder(id);
       ReminderService.completeReminder(id);
@@ -68,9 +83,39 @@ const ReminderCalendar: React.FC<ReminderCalendarProps> = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 vet-card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Reminder Calendar - {format(currentDate, 'MMMM yyyy')}
-        </h3>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">Reminder Calendar</h3>
+          <div className="flex space-x-4">
+            <select 
+              className="px-3 py-2 border rounded-md text-sm"
+              value={format(currentDate, 'MM')}
+              onChange={(e) => {
+                const newDate = new Date(currentDate);
+                newDate.setMonth(parseInt(e.target.value) - 1);
+                onDateChange(newDate);
+              }}
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                <option key={month} value={month.toString().padStart(2, '0')}>
+                  {format(new Date(2025, month - 1), 'MMMM')}
+                </option>
+              ))}
+            </select>
+            <select
+              className="px-3 py-2 border rounded-md text-sm"
+              value={format(currentDate, 'yyyy')}
+              onChange={(e) => {
+                const newDate = new Date(currentDate);
+                newDate.setFullYear(parseInt(e.target.value));
+                onDateChange(newDate);
+              }}
+            >
+              {availableYears.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
+        </div>
         
         <div className="grid grid-cols-7 gap-1 mb-4">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -91,8 +136,8 @@ const ReminderCalendar: React.FC<ReminderCalendarProps> = ({
                 key={day.toISOString()}
                 className={`
                   p-2 min-h-20 border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors
-                  ${isCurrentDay ? 'bg-blue-50 border-blue-300' : ''}
-                  ${isSelected ? 'bg-blue-100 border-blue-400' : ''}
+              ${isCurrentDay ? 'bg-blue-600 border-blue-700 shadow-lg ring-2 ring-blue-400' : ''}
+              ${isSelected ? 'bg-blue-100 border-blue-400' : ''}
                 `}
                 onClick={() => handleDayClick(day)}
               >
@@ -132,7 +177,8 @@ const ReminderCalendar: React.FC<ReminderCalendarProps> = ({
               selectedDateReminders.map(reminder => (
                 <div
                   key={reminder.id}
-                  className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                  className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+                  onClick={() => setSelectedReminder(reminder)}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -171,6 +217,17 @@ const ReminderCalendar: React.FC<ReminderCalendarProps> = ({
           <p className="text-gray-500 text-center py-8">Click on a calendar day to view tasks</p>
         )}
       </div>
+
+      {selectedReminder && (
+        <ReminderDetailModal
+          reminder={selectedReminder}
+          cow={cows?.find(c => c.id === selectedReminder.cowId)}
+          syncMethod={syncMethods?.find(m => m.id === selectedReminder.syncMethodId)}
+          isOpen={!!selectedReminder}
+          onClose={() => setSelectedReminder(null)}
+          onComplete={onCompleteReminder}
+        />
+      )}
     </div>
   );
 };

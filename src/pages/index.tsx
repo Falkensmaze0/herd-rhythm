@@ -1,6 +1,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { addDays } from 'date-fns';
 import Sidebar from '../components/layout/Sidebar';
 import DashboardStats from '../components/dashboard/DashboardStats';
 import RecentReminders from '../components/dashboard/RecentReminders';
@@ -27,6 +28,23 @@ const Index = () => {
   const [showSyncMethodForm, setShowSyncMethodForm] = useState(false);
   const [workforceSetupMethod, setWorkforceSetupMethod] = useState<SyncMethod | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [today] = useState(new Date());
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+
+  // Calculate available years from reminders
+  useEffect(() => {
+    if (reminders.length > 0) {
+      const years = reminders.map(r => new Date(r.dueDate).getFullYear());
+      const uniqueYears = Array.from(new Set(years));
+      const currentYear = new Date().getFullYear();
+      if (!uniqueYears.includes(currentYear)) {
+        uniqueYears.push(currentYear);
+      }
+      setAvailableYears(uniqueYears.sort((a, b) => a - b));
+    } else {
+      setAvailableYears([new Date().getFullYear()]);
+    }
+  }, [reminders]);
 
   const fetcher = useCallback(async <T,>(url: string): Promise<T> => {
     const response = await fetch(url);
@@ -77,7 +95,14 @@ const Index = () => {
 
   useEffect(() => {
     ReminderService.initialize(reminders, cows, syncMethods);
-  }, [reminders, cows, syncMethods]);
+    // Invalidate all related queries when data changes
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['analytics'] }),
+      queryClient.invalidateQueries({ queryKey: ['reminders'] }),
+      queryClient.invalidateQueries({ queryKey: ['cows'] }),
+      queryClient.invalidateQueries({ queryKey: ['sync-methods'] })
+    ]);
+  }, [reminders, cows, syncMethods, queryClient]);
 
   useEffect(() => {
     if (!selectedCow) {
@@ -97,14 +122,23 @@ const Index = () => {
     (syncMethodsQuery.error as Error | undefined);
 
   const analyticsData = useMemo<Analytics>(() => ({
-    totalCows: analyticsQuery.data?.totalCows ?? 0,
-    activeReminders: analyticsQuery.data?.activeReminders ?? 0,
-    completedSyncs: analyticsQuery.data?.completedSyncs ?? 0,
-    pregnancyRate: analyticsQuery.data?.pregnancyRate ?? 0,
-    complianceRate: analyticsQuery.data?.complianceRate ?? 0,
-  }), [analyticsQuery.data]);
+    // Calculate analytics based on current data
+    totalCows: cows.length,
+    activeReminders: reminders.filter(r => !r.completed).length,
+    completedSyncs: reminders.filter(r => r.completed).length,
+    pregnancyRate: cows.length ? (cows.filter(c => c.status === 'pregnant').length / cows.length) * 100 : 0,
+    complianceRate: reminders.length ? (reminders.filter(r => r.completed).length / reminders.length) * 100 : 0
+  }), [cows, reminders]);
 
   const handleCompleteReminder = async (id: string) => {
+    const reminder = reminders.find(r => r.id === id);
+    if (!reminder) return;
+
+    // Prevent completing future tasks
+    if (new Date(reminder.dueDate) > today) {
+      alert('Cannot complete future tasks');
+      return;
+    }
     try {
       await fetch(`/api/reminders/${id}`, {
         method: 'PATCH',
@@ -190,6 +224,69 @@ const Index = () => {
       setEditingSyncMethod(null);
     } catch (error) {
       console.error('Failed to save synchronization method', error);
+    }
+  };
+
+  const handleExportData = async () => {
+    try {
+      const data = {
+        cows,
+        reminders,
+        syncMethods,
+        exportDate: new Date().toISOString()
+      };
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cattlesync-export-${format(new Date(), 'yyyy-MM-dd')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to export data:', error);
+      alert('Failed to export data. Please try again.');
+    }
+  };
+
+  const handleImportData = async (file: File | undefined) => {
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      // Validate data structure
+      if (!data.cows || !data.reminders || !data.syncMethods) {
+        throw new Error('Invalid data format');
+      }
+
+      // Update database through API
+      await fetch('/api/import-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      // Update local state
+      setCows(data.cows);
+      setReminders(data.reminders);
+      setSyncMethods(data.syncMethods);
+
+      // Invalidate queries
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['cows'] }),
+        queryClient.invalidateQueries({ queryKey: ['reminders'] }),
+        queryClient.invalidateQueries({ queryKey: ['sync-methods'] }),
+        queryClient.invalidateQueries({ queryKey: ['analytics'] })
+      ]);
+
+      alert('Data imported successfully!');
+    } catch (error) {
+      console.error('Failed to import data:', error);
+      alert('Failed to import data. Please check the file format.');
     }
   };
 
@@ -345,6 +442,8 @@ const Index = () => {
               currentDate={currentDate}
               onDateChange={setCurrentDate}
               onCompleteReminder={handleCompleteReminder}
+              today={today}
+              availableYears={availableYears}
             />
           </div>
         );
@@ -358,6 +457,7 @@ const Index = () => {
             </div>
             <SyncMethodList
               methods={syncMethods}
+              cows={cows}
               onSelectMethod={handleSelectSyncMethod}
               onEditMethod={(method) => {
                 setEditingSyncMethod(method);
@@ -366,6 +466,67 @@ const Index = () => {
               onDeleteMethod={handleDeleteSyncMethod}
               onCreateNew={() => setShowSyncMethodForm(true)}
               onWorkforceSetup={(method) => setWorkforceSetupMethod(method)}
+              setShowCowForm={setShowCowForm}
+              onApplyProtocol={async (cow, syncMethod) => {
+                try {
+                  const startDate = new Date();
+                  const newReminders = syncMethod.steps.map(step => ({
+                    id: `${cow.id}-${step.id}-${Date.now()}`,
+                    cowId: cow.id,
+                    syncMethodId: syncMethod.id,
+                    type: 'custom' as const,
+                    title: step.title,
+                    description: step.description,
+                    dueDate: addDays(startDate, step.day).toISOString(),
+                    completed: false,
+                    priority: 'medium' as const,
+                    syncStepId: step.id,
+                    workforceSnapshot: {
+                      workers: step.workforceRequirements?.worker_per_cows ? 1 : 0,
+                      technicians: step.workforceRequirements?.technician_per_cows ? 1 : 0,
+                      doctors: step.workforceRequirements?.doctor_per_cows ? 1 : 0
+                    }
+                  }));
+
+                  // Create all reminders
+                  await Promise.all(newReminders.map(reminder => 
+                    fetch('/api/reminders', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(reminder),
+                    })
+                  ));
+
+                  // Update cow's last sync date
+                  await fetch(`/api/cows/${cow.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                      lastSyncDate: startDate.toISOString(),
+                      status: 'active'
+                    }),
+                  });
+                  
+                  // Update local state
+                  setReminders(prev => [...prev, ...newReminders]);
+                  setCows(prev => prev.map(c => 
+                    c.id === cow.id 
+                      ? { ...c, lastSyncDate: startDate.toISOString(), status: 'active' }
+                      : c
+                  ));
+
+                  // Refresh all affected queries
+                  await Promise.all([
+                    queryClient.invalidateQueries({ queryKey: ['cows'] }),
+                    queryClient.invalidateQueries({ queryKey: ['reminders'] }),
+                    queryClient.invalidateQueries({ queryKey: ['analytics'] }),
+                    queryClient.invalidateQueries({ queryKey: ['sync-methods'] })
+                  ]);
+                } catch (error) {
+                  console.error('Failed to apply protocol:', error);
+                  throw error;
+                }
+              }}
             />
           </div>
         );
@@ -435,6 +596,32 @@ const Index = () => {
                   </div>
                 </div>
               </div>
+
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Data Control</h3>
+                <div className="space-y-4">
+                  <div className="flex space-x-4">
+                    <button
+                      onClick={() => handleExportData()}
+                      className="px-4 py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors"
+                    >
+                      Export Data
+                    </button>
+                    <label className="px-4 py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors cursor-pointer">
+                      Import Data
+                      <input
+                        type="file"
+                        accept=".json"
+                        className="hidden"
+                        onChange={(e) => handleImportData(e.target.files?.[0])}
+                      />
+                    </label>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    Export your data for backup or import existing data from another system.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -450,7 +637,7 @@ const Index = () => {
         activeSection={activeSection} 
         onSectionChange={setActiveSection} 
       />
-      <main className="flex-1 p-8 overflow-y-auto">
+      <main className="flex-1 p-8 overflow-y-auto ml-64">
         {renderContent()}
       </main>
     </div>

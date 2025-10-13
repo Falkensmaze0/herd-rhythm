@@ -53,6 +53,13 @@ export interface SyncStep {
   };
 }
 
+export interface ExportData {
+  cows: Cow[];
+  reminders: Reminder[];
+  syncMethods: SyncMethod[];
+  exportDate: string;
+}
+
 export interface Analytics {
   totalCows: number;
   activeReminders: number;

@@ -1,20 +1,101 @@
 
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { pregnancyRateData, protocolUsageData, complianceData } from '../../data/mockData';
+
 import WorkforceForecast from './WorkforceForecast';
 
+import { startOfMonth, format, isWithinInterval, subMonths } from 'date-fns';
+import { Reminder, Cow, SyncMethod } from '../../types';
+
 interface AnalyticsChartsProps {
-  reminders?: any[];
-  cows?: any[];
-  syncMethods?: any[];
+  reminders: Reminder[];
+  cows: Cow[];
+  syncMethods: SyncMethod[];
 }
 
-const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ 
-  reminders = [], 
-  cows = [], 
-  syncMethods = [] 
-}) => {
+interface ChartData {
+  month: string;
+  rate: number;
+}
+
+interface ProtocolUsage {
+  name: string;
+  value: number;
+  color: string;
+}
+
+interface ComplianceData {
+  day: string;
+  compliance: number;
+  totalTasks: number;
+  completedTasks: number;
+}
+
+const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ reminders, cows, syncMethods }) => {
+  const calculatePregnancyRates = (): ChartData[] => {
+    const now = new Date();
+    const sixMonthsAgo = subMonths(now, 6);
+    const months: ChartData[] = [];
+
+    for (let i = 0; i <= 6; i++) {
+      const monthStart = startOfMonth(subMonths(now, i));
+      const monthCows = cows.filter(cow => {
+        const lastSyncDate = new Date(cow.lastSyncDate);
+        return isWithinInterval(lastSyncDate, {
+          start: monthStart,
+          end: subMonths(monthStart, -1)
+        });
+      });
+      
+      const pregnantCows = monthCows.filter(cow => cow.status === 'pregnant').length;
+      const rate = monthCows.length ? (pregnantCows / monthCows.length) * 100 : 0;
+      
+      months.unshift({
+        month: format(monthStart, 'MMM yy'),
+        rate: Math.round(rate)
+      });
+    }
+    return months;
+  };
+
+  const calculateProtocolUsage = (): ProtocolUsage[] => {
+    const usage = syncMethods.map(method => ({
+      name: method.name,
+      value: reminders.filter(r => r.syncMethodId === method.id).length,
+      color: `#${Math.floor(Math.random()*16777215).toString(16)}` // Random color
+    }));
+    return usage.filter(u => u.value > 0);
+  };
+
+  const calculateComplianceRate = (): ComplianceData[] => {
+    const now = new Date();
+    const lastWeek = Array.from({ length: 7 }, (_, i) => {
+      const date = subMonths(now, i);
+      const dateStr = format(date, 'yyyy-MM-dd');
+      
+      // Get all tasks due on this day
+      const dueTasks = reminders.filter(r => format(new Date(r.dueDate), 'yyyy-MM-dd') === dateStr);
+      const totalTasks = dueTasks.length;
+      
+      // Get completed tasks that were due on this day
+      const completedTasks = dueTasks.filter(r => r.completed).length;
+      
+      // Calculate compliance rate
+      const rate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 100;
+      
+      return {
+        day: format(date, 'EEE'),
+        compliance: Math.round(rate),
+        totalTasks,
+        completedTasks
+      };
+    });
+    return lastWeek.reverse();
+  };
+
+  const pregnancyRateData = calculatePregnancyRates();
+  const protocolUsageData = calculateProtocolUsage();
+  const complianceData = calculateComplianceRate();
   return (
     <div className="space-y-8">
       <div className="vet-card">
@@ -24,7 +105,7 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
             <LineChart data={pregnancyRateData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
-              <YAxis domain={[60, 90]} />
+              <YAxis domain={[0, 100]} />
               <Tooltip formatter={(value) => [`${value}%`, 'Pregnancy Rate']} />
               <Line 
                 type="monotone" 
@@ -59,6 +140,7 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
+                  animationDuration={300}
                 >
                   {protocolUsageData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
@@ -77,9 +159,34 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({
               <BarChart data={complianceData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="day" />
-                <YAxis domain={[80, 100]} />
-                <Tooltip formatter={(value) => [`${value}%`, 'Compliance']} />
-                <Bar dataKey="compliance" fill="#16a34a" />
+                <YAxis domain={[0, 100]} />
+                <Tooltip 
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload as ComplianceData;
+                      return (
+                        <div className="bg-white p-2 border border-gray-200 rounded shadow-sm">
+                          <p className="font-medium">{data.day}</p>
+                          <p className="text-sm text-gray-600">Compliance: {data.compliance}%</p>
+                          <p className="text-sm text-gray-600">
+                            Tasks: {data.completedTasks}/{data.totalTasks}
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar 
+                  dataKey="compliance" 
+                  fill="#16a34a" 
+                  animationDuration={300}
+                  label={{
+                    position: 'top',
+                    content: (props: { value: number }) => `${props.value}%`,
+                    fontSize: 12
+                  }}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
