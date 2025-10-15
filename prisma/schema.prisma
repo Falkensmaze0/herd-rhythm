@@ -12,6 +12,9 @@ enum CowStatus {
   pregnant
   sick
   retired
+  quarantine
+  breeding
+  dry
 }
 
 enum ReminderPriority {
@@ -25,6 +28,12 @@ enum ReminderType {
   checkup
   ai
   custom
+  medication
+  vaccination
+  pregnancy_check
+  breeding
+  feeding
+  maintenance
 }
 
 model Cow {
@@ -66,6 +75,186 @@ model SyncStep {
   reminders             Reminder[]
   createdAt             DateTime   @default(now())
   updatedAt             DateTime   @updatedAt
+}
+
+enum UserRole {
+  admin
+  manager
+  doctor
+  technician
+  helper
+  office
+}
+
+enum LogLevel {
+  debug
+  info
+  warn
+  error
+  critical
+}
+
+enum ActionType {
+  login
+  logout
+  create
+  update
+  delete
+  view
+  export
+  import
+  system_change
+  user_management
+  data_access
+  api_call
+  error_occurrence
+  performance_issue
+}
+
+model User {
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  name                  String
+  password              String
+  role                  UserRole  @default(technician)
+  isActive              Boolean   @default(true)
+  
+  // Authentication fields
+  emailVerified         DateTime?
+  lastLogin             DateTime?
+  passwordResetToken    String?
+  passwordResetExpires  DateTime?
+  twoFactorSecret       String?
+  twoFactorEnabled      Boolean   @default(false)
+  
+  // Profile fields
+  avatar                String?
+  phone                 String?
+  department            String?
+  licenseNumber         String?   // For doctors, technicians
+  specializations       Json?     // Array of specializations
+  
+  // Preferences
+  preferences           Json?     // UI preferences, notification settings
+  timezone              String    @default("UTC")
+  language              String    @default("en")
+  
+  // Relations
+  sessions              Session[]
+  auditLogs             AuditLog[]
+  systemLogs            SystemLog[]
+  notifications         UserNotification[]
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  ipAddress    String?
+  userAgent    String?
+  location     String?  // Geo location if available
+  
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model AuditLog {
+  id            String     @id @default(cuid())
+  userId        String?
+  sessionId     String?
+  action        ActionType
+  resource      String     // table/endpoint affected
+  resourceId    String?    // specific record ID
+  oldValues     Json?      // before state
+  newValues     Json?      // after state
+  ipAddress     String?
+  userAgent     String?
+  success       Boolean    @default(true)
+  errorMessage  String?
+  duration      Int?       // request duration in ms
+  
+  user          User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  createdAt     DateTime   @default(now())
+}
+
+model SystemLog {
+  id            String     @id @default(cuid())
+  level         LogLevel
+  category      String     // database, api, auth, performance, security
+  message       String
+  details       Json?      // detailed log data
+  source        String?    // file/function source
+  stackTrace    String?
+  userId        String?    // if user-related
+  sessionId     String?
+  
+  // Performance metrics
+  memoryUsage   Float?
+  cpuUsage      Float?
+  responseTime  Int?
+  queryCount    Int?
+  
+  // System health
+  diskUsage     Float?
+  networkLatency Float?
+  
+  user          User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  createdAt     DateTime   @default(now())
+}
+
+model SystemMetrics {
+  id                String   @id @default(cuid())
+  timestamp         DateTime @default(now())
+  
+  // Server metrics
+  cpuUsage          Float
+  memoryUsage       Float
+  diskUsage         Float
+  networkIn         Float
+  networkOut        Float
+  
+  // Database metrics
+  dbConnections     Int
+  dbResponseTime    Float
+  dbQueryCount      Int
+  dbSlowQueries     Int
+  
+  // Application metrics
+  activeUsers       Int
+  requestsPerMinute Int
+  errorRate         Float
+  uptime            Int     // seconds
+  
+  // Farm-specific metrics
+  totalCows         Int
+  activeReminders   Int
+  completedTasks    Int
+  systemAlerts      Int
+}
+
+model UserNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   // info, warning, error, success
+  priority  String   // low, medium, high, urgent
+  read      Boolean  @default(false)
+  actionUrl String?
+  metadata  Json?
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Reminder {

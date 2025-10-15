@@ -2,9 +2,5 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
-  "/api/cows": "pages/api/cows.js",
-  "/api/reminders": "pages/api/reminders.js",
-  "/api/analytics": "pages/api/analytics.js",
-  "/api/sync-methods": "pages/api/sync-methods.js"
+  "/login": "pages/login.js"
 }

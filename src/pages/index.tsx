@@ -1,7 +1,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { addDays } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { DashboardRouter } from '@/components/dashboards/DashboardRouter';
+import { getRoleConfig } from '@/config/roleConfig';
 import Sidebar from '../components/layout/Sidebar';
 import DashboardStats from '../components/dashboard/DashboardStats';
 import RecentReminders from '../components/dashboard/RecentReminders';
@@ -16,6 +21,8 @@ import { Cow, SyncMethod, Reminder, Analytics } from '../types';
 import { ReminderService } from '../services/ReminderService';
 
 const Index = () => {
+  const router = useRouter();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState('dashboard');
   const [cows, setCows] = useState<Cow[]>([]);
@@ -115,7 +122,7 @@ const Index = () => {
     }
   }, [cows, selectedCow]);
 
-  const isLoading = cowsQuery.isLoading || remindersQuery.isLoading || syncMethodsQuery.isLoading;
+  const dataLoading = cowsQuery.isLoading || remindersQuery.isLoading || syncMethodsQuery.isLoading;
   const loadError =
     (cowsQuery.error as Error | undefined) ||
     (remindersQuery.error as Error | undefined) ||
@@ -240,7 +247,7 @@ const Index = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `cattlesync-export-${format(new Date(), 'yyyy-MM-dd')}.json`;
+      a.download = `cattlesync-export-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -332,8 +339,36 @@ const Index = () => {
     alert(`Protocol "${method.name}" selected. This would open a dialog to apply to selected cows.`);
   };
 
+  // Redirect to appropriate page based on authentication status
+  useEffect(() => {
+    if (!isLoading) {
+      if (isAuthenticated) {
+        router.push('/dashboard');
+      } else {
+        router.push('/login');
+      }
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  // Show role-specific dashboard for authenticated users
+  if (isAuthenticated && user && activeSection === 'dashboard') {
+    return (
+      <AuthGuard>
+        <div className="min-h-screen bg-gray-50 flex">
+          <Sidebar 
+            activeSection={activeSection} 
+            onSectionChange={setActiveSection} 
+          />
+          <main className="flex-1 p-8 overflow-y-auto ml-64">
+            <DashboardRouter />
+          </main>
+        </div>
+      </AuthGuard>
+    );
+  }
+
   const renderContent = () => {
-    if (isLoading) {
+    if (dataLoading) {
       return (
         <div className="vet-card">
           <p className="text-gray-600">Loading herd data...</p>
@@ -631,16 +666,30 @@ const Index = () => {
     }
   };
 
+  // Show loading or redirect to login
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar 
-        activeSection={activeSection} 
-        onSectionChange={setActiveSection} 
-      />
-      <main className="flex-1 p-8 overflow-y-auto ml-64">
-        {renderContent()}
-      </main>
-    </div>
+    <AuthGuard>
+      <div className="min-h-screen bg-gray-50 flex">
+        <Sidebar 
+          activeSection={activeSection} 
+          onSectionChange={setActiveSection} 
+        />
+        <main className="flex-1 p-8 overflow-y-auto ml-64">
+          {renderContent()}
+        </main>
+      </div>
+    </AuthGuard>
   );
 };
 
