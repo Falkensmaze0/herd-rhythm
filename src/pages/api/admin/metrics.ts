@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { AuthService } from '@/services/AuthService';
+import { AuthService } from '@/services/AuthService.server';
 import { SystemMetrics } from '@/types';
 import { prisma } from '@/lib/prisma';
 
@@ -29,7 +29,8 @@ export default async function handler(
       });
     }
 
-    const user = await AuthService.validateSession(sessionToken);
+
+const user = await AuthService.validateSession(sessionToken);
     if (!user || user.role !== 'admin') {
       return res.status(403).json({
         success: false,

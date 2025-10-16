@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { AuthService } from '@/services/AuthService';
+import { AuthService } from '@/services/AuthService.server';
 
 interface LogoutResponse {
   success: boolean;

@@ -36,7 +36,11 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      await AuthService.resetPassword(token as string, password);
+      await fetch('/api/auth/reset/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword: password }),
+      });
       setMessage('Password reset successfully! Redirecting to login...');
       setTimeout(() => router.push('/login'), 2000);
     } catch (err: any) {

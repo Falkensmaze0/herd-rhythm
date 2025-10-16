@@ -2,5 +2,16 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/login": "pages/login.js"
+  "/": "pages/index.js",
+  "/api/reminders": "pages/api/reminders.js",
+  "/api/analytics": "pages/api/analytics.js",
+  "/api/sync-methods": "pages/api/sync-methods.js",
+  "/api/auth/session": "pages/api/auth/session.js",
+  "/api/cows": "pages/api/cows.js",
+  "/login": "pages/login.js",
+  "/api/auth/login": "pages/api/auth/login.js",
+  "/404": "pages/404.js",
+  "/api/admin/metrics": "pages/api/admin/metrics.js",
+  "/dashboard": "pages/dashboard.js",
+  "/api/admin/audit-logs": "pages/api/admin/audit-logs.js"
 }

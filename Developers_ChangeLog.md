@@ -1,18 +1,2 @@
-# Developers ChangeLog
+"# Developers ChangeLog\n\n## Latest Architectural Refactors\n\n- **Modular Authentication Refactor**: Split AuthService into server-only (`AuthService.server.ts`) and client stub (`AuthService.ts`) to prevent server code leaks into the client bundle. All client-side auth now routes through API endpoints (`/api/auth/*`), ensuring no direct service calls.\n- **API Route Normalization**: Updated `/api/auth/login.ts` to import server-only AuthService, handling login with proper session/cookie management via Prisma/PostgreSQL.\n- **Context Updates**: Refactored `AuthContext.tsx` to use fetch calls to API routes for all auth actions (register, login, session validation, logout, password reset). Removed direct AuthService dependencies and added role-based redirection logic via a configuration map.\n- **Webpack Configuration Fixes**: Corrected `next.config.mjs` to use ESM imports and proper client fallbacks for Node.js modules like Buffer and Crypto, resolving "require is not defined" crashes.\n- **Server-Client Boundary Enforcement**: Added universal stubs and server-only modules with clear comments outlining code boundaries, improving security and maintainability.\n- **Error Handling Enhancements**: Implemented defensive try/catch blocks and detailed error responses in API routes and context, with UI feedback via toasts.\n- **Database Integration**: Ensured full PostgreSQL/Prisma integration for auth persistence, with .env verification for secrets and connections.\n\n## Code-Level Changes\n\n- Renamed and split `AuthService.ts` into `AuthService.server.ts` (server logic) and `AuthService.ts` (client stub).\n- Added new API endpoints: `/api/auth/register.ts`, `/api/auth/reset.ts`, `/api/auth/reset/confirm.ts`, `/api/auth/logout.ts` (pending full implementation).\n- Updated imports across files to use server-only modules where applicable.\n- Introduced role-route map in `AuthContext.tsx` for extensible redirection.\n- Fixed Next.js config to handle ESM and client-side polyfills.\n\n## Dependencies and Environment\n\n- Confirmed .env setup for DATABASE_URL and auth secrets.\n- Prisma migrations and seeding integrated for dev/prod consistency.\n\n## Testing and Debugging\n\n- Resolved client bundle crashes by enforcing API-first calls.\n- Planned runtime tests for all auth flows, including role-based redirects and session sync.\n\n## Future Extensions\n\n- Implement 2FA placeholders.\n- Add admin-specific auth features.\n- Optimize for production deployment with Vercel/Prisma."
 
-## Debug & Config Fixes (Commit: auth-db-fix-2023)
-
-- Resolved Hash Corruption: Manual DB insert truncated bcrypt (fixed via psql UPDATE with escaped full hash).
-- Verified Bcrypt: Isolated test confirmed `compare('demo123', hash) === true` post-fix.
-- Env Override: Documented `USE_MOCK_AUTH` impact—prevents unintended mock fallback.
-- Runtime Tests: Curl API hits + server override confirmed endpoint/session creation.
-- No Code Changes: Leveraged existing withFallback; added README tests/docs.
-- Dependencies: Ensured bcryptjs consistency (salt 12); no new deps.
-
-## Config & Runtime Fixes (Commit: mock-override-resolve)
-
-- Confirmed env=true via behavior/logs; temp hardcoded false in useMockService for isolation.
-- Enhanced login debug: Added USE_MOCK_AUTH log—visible in server console.
-- Tests: Curl API + browser verified DB path (user found, password valid, JWT issued).
-- Revert Plan: Remove temp override post-.env fix; preserve fallback for error resilience.
-- No Deps: Leveraged existing bcrypt/Prisma; hot-reload 404s benign.

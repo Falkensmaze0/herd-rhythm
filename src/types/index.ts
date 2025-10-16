@@ -6,7 +6,7 @@ export interface Cow {
   age: number;
   lastSyncDate: string;
   healthNotes: string;
-  status: 'active' | 'pregnant' | 'sick' | 'retired';
+  status: 'active' | 'pregnant' | 'sick' | 'retired' | 'quarantine' | 'breeding' | 'dry';
   reminders: Reminder[];
 }
 
@@ -18,7 +18,7 @@ export interface Reminder {
   dueDate: string;
   completed: boolean;
   priority: 'low' | 'medium' | 'high';
-  type: 'injection' | 'checkup' | 'ai' | 'custom';
+  type: 'injection' | 'checkup' | 'ai' | 'custom' | 'medication' | 'vaccination' | 'pregnancy_check' | 'breeding' | 'feeding' | 'maintenance';
   syncMethodId?: string;
   syncStepId?: string;
   estimatedCowCount?: number;

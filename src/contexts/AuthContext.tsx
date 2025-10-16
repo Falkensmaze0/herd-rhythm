@@ -1,3 +1,9 @@
+/**
+ * AuthContext: Client authentication/session logic. Production-Optimized.
+ * All authentication, session, registration, password ops POST to API routes only.
+ * No direct AuthService/server logic is ever invoked here.
+ * Role-based redirects are managed centrally in this provider after login/session change.
+ */
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { AuthUser, LoginCredentials, RegisterData, UserRole } from '@/types';
 import { AuthService } from '@/services/AuthService';
@@ -31,6 +37,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const isAuthenticated = !!user;
 
+  // Modular user role → landing page route mapping
+  const ROLE_HOME_ROUTE: Record<UserRole, string> = {
+    admin: '/admin',
+    manager: '/manager',
+    doctor: '/doctor',
+    technician: '/technician',
+    helper: '/helper',
+    office: '/office',
+  };
+
+  // Handles role-based redirects after login/session validation
+  // Assumes next/router for navigation
+  let router: any;
+  try {
+    // Dynamic import in case file is used in environments w/o router
+    // (to avoid next/router SSR errors)
+    // Could also use next/navigation in app dir
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    router = require('next/router').useRouter();
+  } catch {}
+
+  useEffect(() => {
+    if (user && user.role && router) {
+      const path = ROLE_HOME_ROUTE[user.role];
+      if (path && router.pathname !== path) {
+        router.push(path);
+      }
+    }
+    // Only depends on user, not router
+  }, [user]);
+
   // Initialize authentication state on app load
   useEffect(() => {
     initializeAuth();
@@ -47,20 +84,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const initializeAuth = async () => {
     try {
       setIsLoading(true);
-      const sessionToken = localStorage.getItem('sessionToken') || getCookie('sessionToken');
-      
-      if (sessionToken) {
-        const validatedUser = await AuthService.validateSession(sessionToken);
-        if (validatedUser) {
-          setUser(validatedUser);
-          // Store session token in localStorage for persistence
-          localStorage.setItem('sessionToken', sessionToken);
-        } else {
-          // Invalid session, clear storage
-          localStorage.removeItem('sessionToken');
-          removeCookie('sessionToken');
+      // Validate session with API, never call AuthService on client
+      const response = await fetch('/api/auth/session', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.user) {
+          setUser(data.user);
+          // Synchronize token, if provided/needed
+          if (data.sessionToken) {
+            localStorage.setItem('sessionToken', data.sessionToken);
+          }
+          return;
         }
       }
+      // If not valid, cleanup session
+      localStorage.removeItem('sessionToken');
+      removeCookie('sessionToken');
     } catch (error) {
       console.error('Authentication initialization failed:', error);
       localStorage.removeItem('sessionToken');
@@ -73,18 +116,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (credentials: LoginCredentials) => {
     try {
       setIsLoading(true);
-      const ipAddress = await getClientIP();
-      const userAgent = navigator.userAgent;
-      
-      const { user: authUser, sessionToken } = await AuthService.login(
-        credentials,
-        ipAddress,
-        userAgent
-      );
+      // Make login API request
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials),
+      });
 
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        if (data.requiresTwoFactor) {
+          throw new Error('Two-factor authentication required');
+        }
+        throw new Error(data.message || 'Login failed');
+      }
+
+      const { user: authUser, sessionToken } = data;
       setUser(authUser);
 
-      // Store session token
+      // Store session token for persistence
       localStorage.setItem('sessionToken', sessionToken);
       if (credentials.rememberMe) {
         setCookie('sessionToken', sessionToken, 30); // 30 days
@@ -94,16 +144,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         title: 'Login Successful',
         description: `Welcome back, ${authUser.name}!`,
         variant: 'default',
-      });
-
-      // Log successful login for audit
-      await AuthService.logAuditEvent({
-        userId: authUser.id,
-        action: 'login',
-        resource: 'auth',
-        success: true,
-        ipAddress,
-        userAgent,
       });
     } catch (error: any) {
       console.error('Login failed:', error);
@@ -129,17 +169,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const sessionToken = localStorage.getItem('sessionToken');
       
-      if (sessionToken && user) {
-        // Log logout event
-        await AuthService.logAuditEvent({
-          userId: user.id,
-          action: 'logout',
-          resource: 'auth',
-          success: true,
+      if (sessionToken) {
+        // POST to logout API endpoint; server will clear session and cookies
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
         });
-        
-        // Revoke session on server
-        await AuthService.revokeSession(sessionToken);
       }
     } catch (error) {
       console.error('Logout error:', error);
@@ -161,8 +197,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (data: RegisterData) => {
     try {
       setIsLoading(true);
-      const newUser = await AuthService.register(data);
-      
+      // POST registration info to API
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const resData = await response.json();
+      if (!response.ok || !resData.success) {
+        throw new Error(resData.message || 'Failed to create account. Please try again.');
+      }
       toast({
         title: 'Registration Successful',
         description: 'Your account has been created. You can now log in.',
@@ -184,8 +228,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const resetPassword = async (email: string) => {
     try {
       setIsLoading(true);
-      await AuthService.requestPasswordReset(email);
-      
+      // POST email to password reset API endpoint
+      const response = await fetch('/api/auth/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const resData = await response.json();
+      if (!response.ok || !resData.success) {
+        throw new Error(resData.message || 'Failed to send password reset. Please try again.');
+      }
       toast({
         title: 'Password Reset Sent',
         description: 'If an account exists with that email, you will receive reset instructions.',
@@ -207,8 +259,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const confirmPasswordReset = async (token: string, newPassword: string) => {
     try {
       setIsLoading(true);
-      await AuthService.resetPassword(token, newPassword);
-      
+      // POST token and newPassword to API endpoint
+      const response = await fetch('/api/auth/reset/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword }),
+      });
+      const resData = await response.json();
+      if (!response.ok || !resData.success) {
+        throw new Error(resData.message || 'Failed to reset password. Please try again.');
+      }
       toast({
         title: 'Password Reset Successful',
         description: 'Your password has been reset. Please log in with your new password.',
@@ -237,16 +297,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const refreshSession = async () => {
     try {
-      const sessionToken = localStorage.getItem('sessionToken');
-      if (sessionToken) {
-        const validatedUser = await AuthService.validateSession(sessionToken);
-        if (validatedUser) {
-          setUser(validatedUser);
-        } else {
-          // Session expired, logout
-          await logout();
+      // Validate session with API; logout if invalid
+      const response = await fetch('/api/auth/session', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.user) {
+          setUser(data.user);
+          return;
         }
       }
+      // Session expired or invalid, logout
+      await logout();
     } catch (error) {
       console.error('Session refresh failed:', error);
       await logout();

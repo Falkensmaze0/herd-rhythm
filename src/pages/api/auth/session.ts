@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { AuthService } from '@/services/AuthService';
+import { AuthService } from '@/services/AuthService.server';
 
 interface SessionResponse {
   success: boolean;
@@ -27,8 +27,7 @@ export default async function handler(
       });
     }
 
-    // Validate the session
-    const user = await AuthService.validateSession(sessionToken);
+const user = await AuthService.validateSession(sessionToken);
 
     if (!user) {
       // Clear invalid session cookie

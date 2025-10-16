@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { AuthService } from '@/services/AuthService';
+import { AuthService } from '@/services/AuthService.server';
 import { LoginCredentials } from '@/types';
 
 interface LoginResponse {

@@ -1,12 +1,15 @@
 import bcrypt from 'bcryptjs';
+import { createSecretKey } from 'crypto';
 import * as jwt from 'jsonwebtoken';
 import { AuthUser, Permission, UserRole, LoginCredentials, RegisterData, AuditLog, SystemLog } from '@/types';
 import { SessionToken, MockUser, MockSession, MockAuditLog, MockSystemLog } from '@/types/mock';
 
 // JWT Helper functions
 const createToken = (payload: Omit<SessionToken, 'iat' | 'exp'>): string => {
-  const secret = process.env.JWT_SECRET || 'development-mock-secret-key';
-  return jwt.sign(payload, secret, { 
+  const secret = process.env.JWT_SECRET;
+  const secretBuffer = Buffer.from(secret, 'hex');
+  const secretKey = createSecretKey(secretBuffer);
+  return jwt.sign(payload, secretKey, { 
     algorithm: 'HS256', 
     expiresIn: '30d',
     encoding: 'utf8'
@@ -14,16 +17,16 @@ const createToken = (payload: Omit<SessionToken, 'iat' | 'exp'>): string => {
 };
 
 const verifyToken = (token: string): SessionToken | null => {
-  const secret = process.env.JWT_SECRET || 'development-mock-secret-key';
+  const secret = process.env.JWT_SECRET;
+  const secretBuffer = Buffer.from(secret, 'hex');
+  const secretKey = createSecretKey(secretBuffer);
   try {
-    return jwt.verify(token, secret) as SessionToken;
+    return jwt.verify(token, secretKey) as SessionToken;
   } catch (error) {
     console.error('JWT Verification failed:', error);
     return null;
   }
 };
-import { KeyObject } from 'crypto';
-
 // Mock database
 const mockUsers: MockUser[] = [
   {
@@ -427,12 +430,14 @@ export class MockAuthService {
       return;
     }
 
-    const secret = process.env.JWT_SECRET || 'development-mock-secret-key-2023';
+    const secret = process.env.JWT_SECRET;
+    const secretBuffer = Buffer.from(secret, 'hex');
+    const secretKey = createSecretKey(secretBuffer);
     if (!secret) {
       throw new Error('JWT_SECRET is not configured');
     }
-    const resetToken = jwt.sign({ userId: user.id } as jwt.JwtPayload, secret, { expiresIn: '1h' });
-    
+    const resetToken = jwt.sign({ userId: user.id } as jwt.JwtPayload, secretKey, { expiresIn: '1h' });
+
     user.passwordResetToken = resetToken;
     user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
