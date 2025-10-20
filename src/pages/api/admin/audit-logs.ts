@@ -54,15 +54,15 @@ export default async function handler(
     const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
 
     // Build filter conditions
-    const where = {};
+    const where: Record<string, unknown> = {};
     if (userId) where.userId = userId;
     if (action) where.action = action;
     if (resource) where.resource = { contains: resource, mode: 'insensitive' };
     if (success !== undefined) where.success = success;
     if (startDate || endDate) {
       where.createdAt = {};
-      if (startDate) where.createdAt.gte = startDate;
-      if (endDate) where.createdAt.lte = endDate;
+      if (startDate) (where.createdAt as Record<string, Date>).gte = startDate;
+      if (endDate) (where.createdAt as Record<string, Date>).lte = endDate;
     }
 
     // Get total count for pagination

@@ -1,18 +1,1 @@
-{
-  "/_app": "pages/_app.js",
-  "/_error": "pages/_error.js",
-  "/_document": "pages/_document.js",
-  "/dashboard": "pages/dashboard.js",
-  "/api/auth/session": "pages/api/auth/session.js",
-  "/404": "pages/404.js",
-  "/admin": "pages/admin.js",
-  "/login": "pages/login.js",
-  "/api/auth/login": "pages/api/auth/login.js",
-  "/": "pages/index.js",
-  "/api/admin/metrics": "pages/api/admin/metrics.js",
-  "/api/admin/audit-logs": "pages/api/admin/audit-logs.js",
-  "/api/cows": "pages/api/cows.js",
-  "/api/reminders": "pages/api/reminders.js",
-  "/api/sync-methods": "pages/api/sync-methods.js",
-  "/api/analytics": "pages/api/analytics.js"
-}
+{"/_app":"pages/_app.js","/404":"pages/404.html","/admin":"pages/admin.html","/api/admin/audit-logs":"pages/api/admin/audit-logs.js","/api/admin/metrics":"pages/api/admin/metrics.js","/api/analytics":"pages/api/analytics.js","/api/auth/login":"pages/api/auth/login.js","/api/auth/logout":"pages/api/auth/logout.js","/api/auth/register":"pages/api/auth/register.js","/api/auth/reset":"pages/api/auth/reset.js","/api/auth/reset/confirm":"pages/api/auth/reset/confirm.js","/api/auth/session":"pages/api/auth/session.js","/api/cows/[id]":"pages/api/cows/[id].js","/api/cows":"pages/api/cows.js","/api/import-data":"pages/api/import-data.js","/api/reminders/[id]":"pages/api/reminders/[id].js","/api/reminders":"pages/api/reminders.js","/api/sync-methods/[id]":"pages/api/sync-methods/[id].js","/api/sync-methods":"pages/api/sync-methods.js","/dashboard":"pages/dashboard.html","/forgot-password":"pages/forgot-password.html","/helper":"pages/helper.html","/":"pages/index.html","/login":"pages/login.html","/doctor":"pages/doctor.html","/office":"pages/office.html","/manager":"pages/manager.html","/technician":"pages/technician.html","/reset-password":"pages/reset-password.html","/_error":"pages/_error.js","/_document":"pages/_document.js"}

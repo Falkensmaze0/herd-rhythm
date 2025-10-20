@@ -22,11 +22,11 @@ export default function ForgotPasswordPage() {
     setMessage('');
 
     try {
-      "await fetch('/api/auth/reset', {
+      await fetch('/api/auth/reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
-      });"
+      });
       setMessage('If an account with that email exists, a password reset link has been sent.');
     } catch (err: any) {
       setError(err.message || 'An error occurred. Please try again.');
