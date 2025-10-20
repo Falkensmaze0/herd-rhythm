@@ -53,7 +53,7 @@ const user = await AuthService.validateSession(sessionToken);
       success: true,
       data: metrics
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Metrics API error:', error);
     
     return res.status(500).json({

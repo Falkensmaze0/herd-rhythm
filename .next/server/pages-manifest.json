@@ -2,12 +2,17 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/api/auth/session": "pages/api/auth/session.js",
   "/dashboard": "pages/dashboard.js",
-  "/api/admin/metrics": "pages/api/admin/metrics.js",
+  "/api/auth/session": "pages/api/auth/session.js",
   "/404": "pages/404.js",
-  "/api/auth/logout": "pages/api/auth/logout.js",
+  "/admin": "pages/admin.js",
   "/login": "pages/login.js",
+  "/api/auth/login": "pages/api/auth/login.js",
+  "/": "pages/index.js",
+  "/api/admin/metrics": "pages/api/admin/metrics.js",
   "/api/admin/audit-logs": "pages/api/admin/audit-logs.js",
-  "/": "pages/index.js"
+  "/api/cows": "pages/api/cows.js",
+  "/api/reminders": "pages/api/reminders.js",
+  "/api/sync-methods": "pages/api/sync-methods.js",
+  "/api/analytics": "pages/api/analytics.js"
 }

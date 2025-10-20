@@ -54,7 +54,7 @@ export default async function handler(
     const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
 
     // Build filter conditions
-    const where: any = {};
+    const where = {};
     if (userId) where.userId = userId;
     if (action) where.action = action;
     if (resource) where.resource = { contains: resource, mode: 'insensitive' };
@@ -93,7 +93,7 @@ export default async function handler(
       id: log.id,
       userId: log.userId,
       sessionId: log.sessionId,
-      action: log.action as any,
+      action: log.action ,
       resource: log.resource,
       resourceId: log.resourceId,
       oldValues: log.oldValues,
@@ -131,7 +131,7 @@ export default async function handler(
         totalPages
       }
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Audit logs API error:', error);
     
     return res.status(500).json({
