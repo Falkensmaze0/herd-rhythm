@@ -1,24 +1,24 @@
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { AlertCircle, Eye, EyeOff, LayoutGrid, Loader2, Lock, Mail, Sparkles } from 'lucide-react';
+
 import { useAuth } from '@/contexts/AuthContext';
+import { getRoleDisplayName } from '@/config/roleConfig';
 import { LoginCredentials, UserRole } from '@/types';
-import { getRoleConfig, getRoleDisplayName } from '@/config/roleConfig';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Eye, EyeOff, Lock, Mail, Shield, AlertCircle, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  email: z.string().email('Please enter a valid email'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   rememberMe: z.boolean().default(false),
   twoFactorCode: z.string().optional(),
@@ -33,29 +33,29 @@ interface LoginFormProps {
   className?: string;
 }
 
-const ROLE_COLORS: Record<UserRole, string> = {
-  admin: 'bg-red-500 text-white',
-  manager: 'bg-blue-500 text-white',
-  doctor: 'bg-green-500 text-white',
-  technician: 'bg-purple-500 text-white',
-  helper: 'bg-yellow-500 text-black',
-  office: 'bg-gray-500 text-white',
+const ROLE_BADGE_STYLES: Record<UserRole, string> = {
+  admin: 'border border-rose-400/40 bg-rose-500/10 text-rose-50',
+  manager: 'border border-sky-400/40 bg-sky-500/10 text-sky-50',
+  doctor: 'border border-emerald-400/40 bg-emerald-500/10 text-emerald-50',
+  technician: 'border border-violet-400/40 bg-violet-500/10 text-violet-50',
+  helper: 'border border-amber-400/40 bg-amber-500/10 text-amber-950',
+  office: 'border border-slate-400/40 bg-slate-500/10 text-slate-100',
 };
 
-const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  admin: 'Complete system access and configuration',
-  manager: 'Farm operations and staff management',
-  doctor: 'Medical care and health management',
-  technician: 'AI procedures and sync protocols',
-  helper: 'Daily care and maintenance tasks',
-  office: 'Administrative and communication tasks',
+const ROLE_NARRATIVE: Record<UserRole, string> = {
+  admin: 'Steward the entire Herd Rhythm infrastructure with full-spectrum control.',
+  manager: 'Coordinate workforce, logistics, and daily production signals.',
+  doctor: 'Lead veterinary operations with precision diagnostics and rounds planning.',
+  technician: 'Execute synchronization protocols with timing perfection and equipment readiness.',
+  helper: 'Stay aligned on feeding, cleaning, and stall maintenance priorities.',
+  office: 'Drive communications, appointments, and documentation governance.',
 };
 
 export const LoginForm: React.FC<LoginFormProps> = ({
   selectedRole,
   onRoleChange,
   onSuccess,
-  className
+  className,
 }) => {
   const [currentRole, setCurrentRole] = useState<UserRole>(selectedRole || 'technician');
   const [showPassword, setShowPassword] = useState(false);
@@ -63,7 +63,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [loginError, setLoginError] = useState<string | null>(null);
   
   const { login, isLoading } = useAuth();
-  const roleConfig = getRoleConfig(currentRole);
   
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -85,14 +84,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const onSubmit = async (data: LoginFormData) => {
     try {
       setLoginError(null);
-      // Ensure required fields are present
-      const loginData: LoginCredentials = {
-        email: data.email!,
-        password: data.password!,
+      const payload: LoginCredentials = {
+        email: data.email,
+        password: data.password,
         rememberMe: data.rememberMe,
-        twoFactorCode: data.twoFactorCode
+        twoFactorCode: data.twoFactorCode,
       };
-      await login(loginData);
+
+      await login(payload);
       onSuccess?.();
     } catch (error: any) {
       if (error.message === 'Two-factor authentication required') {
@@ -103,212 +102,214 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     }
   };
 
-  const RoleHeader: React.FC<{ role: UserRole }> = ({ role }) => {
-    const config = getRoleConfig(role);
-    return (
-      <div className="text-center space-y-3">
-        <div className="flex items-center justify-center space-x-2">
-          <Shield className="h-6 w-6 text-primary" />
-          <Badge className={cn('text-sm', ROLE_COLORS[role])}>
-            {getRoleDisplayName(role)}
-          </Badge>
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            {ROLE_DESCRIPTIONS[role]}
-          </p>
-        </div>
-      </div>
-    );
-  };
-
-  const RoleSelector: React.FC = () => (
-    <Tabs value={currentRole} onValueChange={(value) => handleRoleSelect(value as UserRole)}>
-      <TabsList className="grid w-full grid-cols-3 mb-6">
-        <TabsTrigger value="admin" className="text-xs">Admin</TabsTrigger>
-        <TabsTrigger value="manager" className="text-xs">Manager</TabsTrigger>
-        <TabsTrigger value="doctor" className="text-xs">Doctor</TabsTrigger>
+  const RoleSelector = () => (
+    <Tabs
+      value={currentRole}
+      onValueChange={(value) => handleRoleSelect(value as UserRole)}
+      className="space-y-3"
+    >
+      <TabsList className="grid w-full grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-1 text-xs">
+        <TabsTrigger
+          value="admin"
+          className="rounded-xl border border-transparent px-3 py-2 uppercase tracking-[0.24em] text-[0.7rem] text-slate-300 transition hover:border-white/20 hover:bg-white/10 data-[state=active]:border-white/30 data-[state=active]:bg-white/15 data-[state=active]:text-white"
+        >
+          Admin
+        </TabsTrigger>
+        <TabsTrigger value="manager" className="rounded-xl border border-transparent px-3 py-2 uppercase tracking-[0.24em] text-[0.7rem] text-slate-300 transition hover:border-white/20 hover:bg-white/10 data-[state=active]:border-white/30 data-[state=active]:bg-white/15 data-[state=active]:text-white">
+          Manager
+        </TabsTrigger>
+        <TabsTrigger value="doctor" className="rounded-xl border border-transparent px-3 py-2 uppercase tracking-[0.24em] text-[0.7rem] text-slate-300 transition hover:border-white/20 hover:bg-white/10 data-[state=active]:border-white/30 data-[state=active]:bg-white/15 data-[state=active]:text-white">
+          Doctor
+        </TabsTrigger>
       </TabsList>
-      <TabsList className="grid w-full grid-cols-3 mb-4">
-        <TabsTrigger value="technician" className="text-xs">Technician</TabsTrigger>
-        <TabsTrigger value="helper" className="text-xs">Helper</TabsTrigger>
-        <TabsTrigger value="office" className="text-xs">Office</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-1 text-xs">
+        <TabsTrigger value="technician" className="rounded-xl border border-transparent px-3 py-2 uppercase tracking-[0.24em] text-[0.7rem] text-slate-300 transition hover:border-white/20 hover:bg-white/10 data-[state=active]:border-white/30 data-[state=active]:bg-white/15 data-[state=active]:text-white">
+          Technician
+        </TabsTrigger>
+        <TabsTrigger value="helper" className="rounded-xl border border-transparent px-3 py-2 uppercase tracking-[0.24em] text-[0.7rem] text-slate-300 transition hover:border-white/20 hover:bg-white/10 data-[state=active]:border-white/30 data-[state=active]:bg-white/15 data-[state=active]:text-white">
+          Helper
+        </TabsTrigger>
+        <TabsTrigger value="office" className="rounded-xl border border-transparent px-3 py-2 uppercase tracking-[0.24em] text-[0.7rem] text-slate-300 transition hover:border-white/20 hover:bg-white/10 data-[state=active]:border-white/30 data-[state=active]:bg-white/15 data-[state=active]:text-white">
+          Office
+        </TabsTrigger>
       </TabsList>
     </Tabs>
   );
 
   return (
-    <div className={cn('w-full max-w-md mx-auto', className)}>
-      <Card className="shadow-lg border-0 bg-white/95 backdrop-blur">
-        <CardHeader className="space-y-6 pb-6">
-          <div className="text-center">
-            <div className="mx-auto h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Shield className="h-6 w-6 text-primary" />
-            </div>
-            <CardTitle className="text-2xl font-bold">CattleSync Pro</CardTitle>
-            <CardDescription className="text-gray-500">
-              Secure farm management system
-            </CardDescription>
+    <div className={cn('w-full', className)}>
+      <div className="space-y-8 rounded-3xl border border-white/10 bg-white/[0.06] p-6 text-slate-200 shadow-[0_28px_120px_-40px_rgba(16,185,129,0.6)] backdrop-blur-xl">
+        <header className="space-y-5 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-300/40 bg-emerald-500/20">
+            <LayoutGrid className="h-5 w-5 text-emerald-200" />
           </div>
-          
+          <div className="space-y-2">
+            <Badge
+              className="rounded-full border border-white/15 bg-white/10 px-4 py-1 text-[0.7rem] uppercase tracking-[0.32em] text-emerald-200"
+            >
+              Secure login surface
+            </Badge>
+            <h2 className="text-2xl font-semibold text-white">Authenticate to Herd Rhythm</h2>
+            <p className="text-sm text-slate-300/80">
+              Log in using your role-aligned credentials. Multifactor hardening is enabled for privileged roles.
+            </p>
+          </div>
+        </header>
+
+        <div className="space-y-6">
           <RoleSelector />
-          <RoleHeader role={currentRole} />
-        </CardHeader>
-        
-        <CardContent className="space-y-6">
-          {loginError && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{loginError}</AlertDescription>
-            </Alert>
-          )}
-          
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* Email Field */}
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">Email Address</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          {...field}
-                          type="email"
-                          placeholder={`Enter your ${currentRole} email`}
-                          className="pl-10 h-12 border-gray-200 focus:border-primary"
-                          disabled={isLoading}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage className="text-red-500 text-sm" />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Password Field */}
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">Password</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          {...field}
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder="Enter your password"
-                          className="pl-10 pr-10 h-12 border-gray-200 focus:border-primary"
-                          disabled={isLoading}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                          disabled={isLoading}
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </FormControl>
-                    <FormMessage className="text-red-500 text-sm" />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Two Factor Code (if required) */}
-              {requireTwoFactor && (
-                <FormField
-                  control={form.control}
-                  name="twoFactorCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">Two-Factor Code</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="text"
-                          placeholder="Enter 6-digit code"
-                          className="h-12 border-gray-200 focus:border-primary text-center font-mono"
-                          maxLength={6}
-                          disabled={isLoading}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500 text-sm" />
-                    </FormItem>
-                  )}
-                />
+
+          <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.05] p-4 text-left">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-slate-400">
+              <Sparkles className="h-4 w-4" /> Role context
+            </div>
+            <div className="space-y-2">
+              <Badge className={cn('rounded-full px-3 py-1 text-[0.6rem] uppercase tracking-[0.28em]', ROLE_BADGE_STYLES[currentRole])}>
+                {getRoleDisplayName(currentRole)}
+              </Badge>
+              <p className="text-sm text-slate-300/80">{ROLE_NARRATIVE[currentRole]}</p>
+            </div>
+          </div>
+        </div>
+
+        {loginError && (
+          <Alert className="border border-rose-400/40 bg-rose-500/15 text-rose-100">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{loginError}</AlertDescription>
+          </Alert>
+        )}
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs uppercase tracking-[0.24em] text-slate-300">
+                    Email address
+                  </FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
+                      <Input
+                        {...field}
+                        type="email"
+                        placeholder={`your.${currentRole}@herdrhythm.io`}
+                        className="h-12 rounded-2xl border border-white/15 bg-white/[0.08] pl-11 text-slate-100 placeholder:text-slate-500 focus:border-emerald-400 focus:ring-emerald-400"
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage className="text-rose-300" />
+                </FormItem>
               )}
-              
-              {/* Remember Me */}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs uppercase tracking-[0.24em] text-slate-300">
+                    Password
+                  </FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
+                      <Input
+                        {...field}
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        className="h-12 rounded-2xl border border-white/15 bg-white/[0.08] pl-11 pr-12 text-slate-100 placeholder:text-slate-500 focus:border-emerald-400 focus:ring-emerald-400"
+                        disabled={isLoading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-200"
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        disabled={isLoading}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </FormControl>
+                  <FormMessage className="text-rose-300" />
+                </FormItem>
+              )}
+            />
+
+            {requireTwoFactor && (
               <FormField
                 control={form.control}
-                name="rememberMe"
+                name="twoFactorCode"
                 render={({ field }) => (
-                  <FormItem className="flex items-center space-x-2 space-y-0">
+                  <FormItem>
+                    <FormLabel className="text-xs uppercase tracking-[0.24em] text-slate-300">
+                      Two-factor code
+                    </FormLabel>
                     <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
+                      <Input
+                        {...field}
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="000000"
+                        className="h-12 rounded-2xl border border-white/15 bg-white/[0.08] text-center font-semibold tracking-[0.4em] text-slate-100 placeholder:text-slate-500 focus:border-emerald-400 focus:ring-emerald-400"
                         disabled={isLoading}
                       />
                     </FormControl>
-                    <FormLabel className="text-sm text-gray-600 font-normal">
-                      Remember me on this device
-                    </FormLabel>
+                    <FormMessage className="text-rose-300" />
                   </FormItem>
                 )}
               />
-              
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                className="w-full h-12 text-white font-semibold"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing In...
-                  </>
-                ) : (
-                  `Sign In as ${getRoleDisplayName(currentRole)}`
-                )}
-              </Button>
-            </form>
-          </Form>
-          
-          {/* Footer Links */}
-          <div className="text-center space-y-2">
-            <button
-              type="button"
-              className="text-sm text-primary hover:underline"
-              onClick={() => {
-                // TODO: Implement forgot password
-                console.log('Forgot password clicked');
-              }}
-            >
-              Forgot your password?
-            </button>
-            
-            {currentRole === 'admin' && (
-              <div className="text-xs text-gray-500 mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
-                <AlertCircle className="inline h-3 w-3 mr-1 text-red-500" />
-                <span className="font-medium text-red-700">Admin Access:</span>
-                <span className="text-red-600 ml-1">
-                  Complete system control and sensitive data access
-                </span>
-              </div>
             )}
-          </div>
-        </CardContent>
-      </Card>
+
+            <FormField
+              control={form.control}
+              name="rememberMe"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-3">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      className="border-white/40 data-[state=checked]:border-emerald-400 data-[state=checked]:bg-emerald-500"
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormLabel className="text-xs uppercase tracking-[0.24em] text-slate-400">
+                    Remember me on this device
+                  </FormLabel>
+                </FormItem>
+              )}
+            />
+
+            <Button
+              type="submit"
+              className="h-12 w-full rounded-full border border-emerald-300/50 bg-emerald-500/80 text-sm font-semibold uppercase tracking-[0.28em] text-white transition hover:bg-emerald-400"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in…
+                </>
+              ) : (
+                `Enter as ${getRoleDisplayName(currentRole)}`
+              )}
+            </Button>
+          </form>
+        </Form>
+
+        <footer className="flex items-center justify-between text-xs uppercase tracking-[0.28em] text-slate-400">
+          <Link href="/forgot-password" className="text-emerald-200 hover:text-emerald-100">
+            Forgot password
+          </Link>
+          <span className="flex items-center gap-2 text-slate-500">
+            <Sparkles className="h-4 w-4 text-emerald-300" /> Secure session
+          </span>
+        </footer>
+      </div>
     </div>
   );
 };
