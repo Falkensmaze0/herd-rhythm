@@ -1,3 +1,5 @@
+ The suggested edits should follow the existing changelog format and be placed in the appropriate section.
+
 ## [Unreleased] – 2025-10-20
 
 - Resolved all blocking TypeScript build errors, focusing on:
@@ -49,3 +51,15 @@
 - Implement 2FA placeholders.
 - Add admin-specific auth features.
 - Optimize for production deployment with Vercel/Prisma.
+
+## [Unreleased]
+
+- Refactored `src/components/dashboards/ManagerDashboard.tsx` to use modular, intelligent components: `TimeWindowSelector`, `PerformanceHighlights`, `CostBreakdownChart`, `WorkforceCapacityChart`, `ProjectionInsights`.
+- Added `src/types/manager.ts` with strict/typed ManagerAnalytics interface for maintainability and clearer frontend-backend contract.
+- Created highly reusable UI logic for time-window selection and analytics, increasing maintainability and testability.
+- Deprecated hard-coded card UI in favor of domain-specific, prop-driven dashboards.
+- Documented integration points for future ML and backend analytics enhancements.
+
+---
+
+This updated changelog now accurately reflects the changes made to the ManagerDashboard component, as well as the addition of a new type file. The suggested edits have been placed in the appropriate section of the existing changelog format.

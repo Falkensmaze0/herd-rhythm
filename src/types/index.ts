@@ -291,3 +291,7 @@ export interface QuickAction {
   variant: 'primary' | 'secondary' | 'danger';
   requiredPermission?: { resource: string; action: string };
 }
+
+// Central manager analytics type for dashboard features
+export type { ManagerAnalytics } from './manager';
+

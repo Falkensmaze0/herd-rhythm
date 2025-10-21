@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AdminDashboard } from './AdminDashboard';
@@ -77,4 +78,4 @@ export const DashboardRouter: React.FC<DashboardRouterProps> = ({ className }) =
   );
 };
 
-export default DashboardRouter;
+// Removed default export: use named import { DashboardRouter } as everywhere in the project.

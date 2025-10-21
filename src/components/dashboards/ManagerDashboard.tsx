@@ -1,423 +1,63 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import { 
-  BarChart3, 
-  Calendar, 
-  DollarSign, 
-  TrendingUp, 
-  TrendingDown, 
-  Users, 
-  Clipboard, 
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  Target,
-  Activity,
-  Plus,
-  FileText,
-  Settings
-} from 'lucide-react';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
-
-interface FarmStatsProps {
-  stats: {
-    totalCows: number;
-    activeTasks: number;
-    staffOnDuty: number;
-    dailyProduction: number;
-    weeklyProduction: number;
-    productionChange: number;
-    complianceRate: number;
-    budgetUtilization: number;
-  };
-}
-
-const FarmOverviewCard: React.FC<FarmStatsProps> = ({ stats }) => {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Activity className="h-5 w-5" />
-          <span>Farm Overview</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{stats.totalCows}</div>
-            <div className="text-sm text-gray-500">Total Cows</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.activeTasks}</div>
-            <div className="text-sm text-gray-500">Active Tasks</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{stats.staffOnDuty}</div>
-            <div className="text-sm text-gray-500">Staff on Duty</div>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-1">
-              <span className="text-2xl font-bold text-orange-600">{stats.dailyProduction}L</span>
-              {stats.productionChange > 0 ? (
-                <TrendingUp className="h-4 w-4 text-green-500" />
-              ) : (
-                <TrendingDown className="h-4 w-4 text-red-500" />
-              )}
-            </div>
-            <div className="text-sm text-gray-500">Daily Production</div>
-          </div>
-        </div>
-        
-        <Separator className="my-4" />
-        
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Compliance Rate</span>
-            <span className="text-sm font-bold">{stats.complianceRate}%</span>
-          </div>
-          <Progress value={stats.complianceRate} className="h-2" />
-          
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Budget Utilization</span>
-            <span className="text-sm font-bold">{stats.budgetUtilization}%</span>
-          </div>
-          <Progress value={stats.budgetUtilization} className="h-2" />
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-interface StaffScheduleProps {
-  schedule: {
-    date: string;
-    staff: {
-      id: string;
-      name: string;
-      role: string;
-      shift: string;
-      status: 'present' | 'absent' | 'late';
-    }[];
-  }[];
-}
-
-const StaffScheduleCard: React.FC<StaffScheduleProps> = ({ schedule }) => {
-  const weekDays = eachDayOfInterval({
-    start: startOfWeek(new Date()),
-    end: endOfWeek(new Date())
-  });
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'present': return 'bg-green-100 text-green-800 border-green-200';
-      case 'absent': return 'bg-red-100 text-red-800 border-red-200';
-      case 'late': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Calendar className="h-5 w-5" />
-            <span>Staff Schedule</span>
-          </div>
-          <Button variant="outline" size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            Add Shift
-          </Button>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {weekDays.map((day, index) => {
-            const daySchedule = schedule.find(s => 
-              format(new Date(s.date), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd')
-            );
-            
-            return (
-              <div key={index} className="border rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold text-sm">
-                    {format(day, 'EEE, MMM dd')}
-                  </h4>
-                  <span className="text-xs text-gray-500">
-                    {daySchedule?.staff.length || 0} staff scheduled
-                  </span>
-                </div>
-                
-                {daySchedule ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {daySchedule.staff.map((person) => (
-                      <div key={person.id} className="flex items-center justify-between text-xs p-2 bg-gray-50 rounded">
-                        <div>
-                          <div className="font-medium">{person.name}</div>
-                          <div className="text-gray-500">{person.role} - {person.shift}</div>
-                        </div>
-                        <Badge className={getStatusColor(person.status)}>
-                          {person.status}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-500 text-xs py-2">
-                    No staff scheduled
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-interface TaskProgressProps {
-  tasks: {
-    department: string;
-    completed: number;
-    total: number;
-    overdue: number;
-  }[];
-}
-
-const TaskProgressCard: React.FC<TaskProgressProps> = ({ tasks }) => {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Clipboard className="h-5 w-5" />
-          <span>Task Completion by Department</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {tasks.map((dept, index) => {
-            const completionRate = (dept.completed / dept.total) * 100;
-            return (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{dept.department}</span>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-gray-500">
-                      {dept.completed}/{dept.total}
-                    </span>
-                    {dept.overdue > 0 && (
-                      <Badge variant="destructive" className="text-xs">
-                        {dept.overdue} overdue
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <Progress value={completionRate} className="h-2" />
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>{completionRate.toFixed(1)}% complete</span>
-                  <span>{dept.total - dept.completed} remaining</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-interface ManagementAlertsProps {
-  alerts: {
-    id: string;
-    type: 'operational' | 'compliance' | 'budget' | 'staff';
-    title: string;
-    description: string;
-    priority: 'low' | 'medium' | 'high' | 'urgent';
-    timestamp: string;
-  }[];
-}
-
-const ManagementAlertsCard: React.FC<ManagementAlertsProps> = ({ alerts }) => {
-  const getAlertIcon = (type: string) => {
-    switch (type) {
-      case 'operational': return <Activity className="h-4 w-4" />;
-      case 'compliance': return <CheckCircle className="h-4 w-4" />;
-      case 'budget': return <DollarSign className="h-4 w-4" />;
-      case 'staff': return <Users className="h-4 w-4" />;
-      default: return <AlertCircle className="h-4 w-4" />;
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'border-l-red-500 bg-red-50';
-      case 'high': return 'border-l-orange-500 bg-orange-50';
-      case 'medium': return 'border-l-yellow-500 bg-yellow-50';
-      case 'low': return 'border-l-blue-500 bg-blue-50';
-      default: return 'border-l-gray-500 bg-gray-50';
-    }
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <AlertCircle className="h-5 w-5" />
-            <span>Management Alerts</span>
-          </div>
-          {alerts.length > 0 && (
-            <Badge variant="destructive">{alerts.length}</Badge>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {alerts.length === 0 ? (
-          <div className="text-center py-6 text-gray-500">
-            <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
-            <p>No alerts at this time</p>
-          </div>
-        ) : (
-          <div className="space-y-3 max-h-64 overflow-y-auto">
-            {alerts.map((alert) => (
-              <div 
-                key={alert.id} 
-                className={`p-3 rounded-lg border-l-4 ${getPriorityColor(alert.priority)}`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-2">
-                    {getAlertIcon(alert.type)}
-                    <div>
-                      <h4 className="text-sm font-semibold">{alert.title}</h4>
-                      <p className="text-xs text-gray-600 mt-1">{alert.description}</p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="text-xs">
-                    {alert.priority}
-                  </Badge>
-                </div>
-                <div className="mt-2 flex justify-between items-center">
-                  <span className="text-xs text-gray-500">
-                    {format(new Date(alert.timestamp), 'MMM dd, HH:mm')}
-                  </span>
-                  <Button size="sm" variant="outline" className="h-6 text-xs">
-                    Review
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
+// Adjust the import below to your actual ManagerAnalytics type location
+import { ManagerAnalytics } from '@/types';
 
 export const ManagerDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [stats, setStats] = useState<any>(null);
-  const [schedule, setSchedule] = useState<any[]>([]);
-  const [taskProgress, setTaskProgress] = useState<any[]>([]);
-  const [alerts, setAlerts] = useState<any[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<ManagerAnalytics | null>(null);
+  const [windowParam, setWindowParam] = useState('1w');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    loadAnalytics();
+    // eslint-disable-next-line
+  }, [windowParam]);
 
-  const loadDashboardData = async () => {
+  const loadAnalytics = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      // Mock data for now - replace with actual API calls
-      setStats({
-        totalCows: 150,
-        activeTasks: 23,
-        staffOnDuty: 8,
-        dailyProduction: 1250,
-        weeklyProduction: 8750,
-        productionChange: 2.5,
-        complianceRate: 95,
-        budgetUtilization: 78
-      });
-
-      setSchedule([
-        {
-          date: format(new Date(), 'yyyy-MM-dd'),
-          staff: [
-            { id: '1', name: 'John Doe', role: 'Technician', shift: 'Morning', status: 'present' },
-            { id: '2', name: 'Jane Smith', role: 'Helper', shift: 'Morning', status: 'present' },
-            { id: '3', name: 'Mike Johnson', role: 'Doctor', shift: 'Afternoon', status: 'late' }
-          ]
-        }
-      ]);
-
-      setTaskProgress([
-        { department: 'Breeding', completed: 8, total: 12, overdue: 1 },
-        { department: 'Health Care', completed: 15, total: 18, overdue: 0 },
-        { department: 'Feeding', completed: 25, total: 25, overdue: 0 },
-        { department: 'Maintenance', completed: 3, total: 7, overdue: 2 }
-      ]);
-
-      setAlerts([
-        {
-          id: '1',
-          type: 'budget',
-          title: 'Feed Budget Alert',
-          description: 'Feed costs exceeded 80% of monthly budget',
-          priority: 'high',
-          timestamp: new Date().toISOString()
-        },
-        {
-          id: '2',
-          type: 'operational',
-          title: 'Equipment Maintenance Due',
-          description: 'Milking equipment #3 requires scheduled maintenance',
-          priority: 'medium',
-          timestamp: new Date().toISOString()
-        }
-      ]);
+      const res = await fetch(`/api/manager/analytics?window=${windowParam}`);
+      const data = res.ok ? await res.json() : null;
+      setAnalyticsData(data?.data || null);
     } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+      console.error('Failed to fetch analytics:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const QuickActions: React.FC = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle>Quick Actions</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 gap-3">
-          <Button variant="default" className="justify-start">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Task
-          </Button>
-          <Button variant="outline" className="justify-start">
-            <Users className="h-4 w-4 mr-2" />
-            Schedule Staff
-          </Button>
-          <Button variant="outline" className="justify-start">
-            <FileText className="h-4 w-4 mr-2" />
-            Generate Report
-          </Button>
-          <Button variant="outline" className="justify-start">
-            <Settings className="h-4 w-4 mr-2" />
-            Farm Settings
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+  // -------- Time Window Selector --------
+  const windowOptions = [
+    { value: '5m', label: '5 Min' },
+    { value: '30m', label: '30 Min' },
+    { value: '1h', label: '1 Hour' },
+    { value: '6h', label: '6 Hours' },
+    { value: '1d', label: '1 Day' },
+    { value: '7d', label: '1 Week' },
+    { value: '30d', label: '1 Month' },
+    { value: '90d', label: '1 Quarter' },
+    { value: '1y', label: '1 Year' }
+  ];
+
+  const AnalyticsWindowSelector = () => (
+    <select
+      value={windowParam}
+      onChange={e => setWindowParam(e.target.value)}
+      className="border rounded px-2 py-1 text-sm bg-white ml-2"
+      style={{ minWidth: 90 }}
+    >
+      {windowOptions.map(opt => (
+        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
   );
 
-  if (loading || !stats) {
+  if (loading || !analyticsData) {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold">Manager Dashboard</h1>
@@ -430,44 +70,92 @@ export const ManagerDashboard: React.FC = () => {
     );
   }
 
+  const {
+    profitToSpending,
+    profit,
+    spending,
+    costBreakdown,
+    overdueTasks,
+    overdueReminders,
+    completionRate,
+    workforceForecast,
+    projection
+  } = analyticsData;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
-          <p className="text-gray-600 mt-1">
-            Welcome back, {user?.name}. Here's your farm overview.
-          </p>
+          <p className="text-gray-600 mt-1">Welcome back, {user?.name}. Operational analytics below.</p>
         </div>
-        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-          Farm Operations Active
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="bg-blue-100 text-blue-800">Farm Operations Active</Badge>
+          <AnalyticsWindowSelector />
+        </div>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Farm Overview - Spans 2 columns */}
         <div className="lg:col-span-3">
-          <FarmOverviewCard stats={stats} />
+          <Card>
+            <CardHeader>
+              <CardTitle>Profit / Spending</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-3 text-xl font-bold">¥{profit.toLocaleString()} / ¥{spending.toLocaleString()}</div>
+              <div className="text-sm text-gray-500">Ratio: {profitToSpending.toFixed(2)}</div>
+              <Separator className="my-3" />
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(costBreakdown).map(([k, v]) =>
+                  typeof v === 'number' ? (
+                    <div key={k}>
+                      <span className="text-xs text-gray-600">{k}</span><br />
+                      <span className="font-semibold">¥{v.toLocaleString()}</span>
+                    </div>
+                  ) : (
+                    // For nested breakdowns like medical: { labor, equipment }
+                    <div key={k}>
+                      {Object.entries(v as Record<string, number>).map(([nk, nv]) =>
+                        <div key={nk}>
+                          <span className="text-xs text-gray-600">{k}/{nk}</span><br />
+                          <span className="font-semibold">¥{nv.toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
-
-        {/* Quick Actions */}
-        <QuickActions />
-
-        {/* Staff Schedule - Spans 2 columns */}
-        <div className="lg:col-span-2">
-          <StaffScheduleCard schedule={schedule} />
+        <div className="lg:col-span-1 space-y-3">
+          <Card>
+            <CardHeader><CardTitle>Completion Rate</CardTitle></CardHeader>
+            <CardContent className="text-xl font-bold">{completionRate}%</CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle>Overdue Tasks</CardTitle></CardHeader>
+            <CardContent className="text-xl font-bold">{overdueTasks} / {overdueReminders}</CardContent>
+          </Card>
         </div>
-
-        {/* Task Progress */}
-        <div className="lg:col-span-2">
-          <TaskProgressCard tasks={taskProgress} />
-        </div>
-
-        {/* Management Alerts - Full width */}
         <div className="lg:col-span-4">
-          <ManagementAlertsCard alerts={alerts} />
+          <Card>
+            <CardHeader><CardTitle>Workforce Forecast</CardTitle></CardHeader>
+            <CardContent>
+              {/* Plug in a chart here as needed */}
+              <pre className="text-xs bg-gray-50 p-2 rounded">{JSON.stringify(workforceForecast, null, 2)}</pre>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="lg:col-span-4">
+          <Card>
+            <CardHeader><CardTitle>Projections (ML Powered in Future)</CardTitle></CardHeader>
+            <CardContent>
+              <pre className="text-xs bg-gray-50 p-2 rounded">{JSON.stringify(projection, null, 2)}</pre>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
   );
 };
+

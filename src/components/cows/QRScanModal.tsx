@@ -1,6 +1,9 @@
+
+
+// Remove direct imports of Html5Qrcode
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { X, Camera } from 'lucide-react';
-import { Html5Qrcode } from 'html5-qrcode';
+// import { Html5Qrcode } from 'html5-qrcode'; // <-- Remove
 
 interface QRScanModalProps {
   isOpen: boolean;
@@ -30,24 +33,18 @@ const QRScanModal: React.FC<QRScanModalProps> = ({ isOpen, onClose, onScanSucces
 
   useEffect(() => {
     let mounted = true;
-
     const initializeScanner = async () => {
       if (!isOpen || !containerRef.current) return;
 
       try {
         setError("");
-        
-        // Cleanup previous instance
         if (qrRef.current) {
           await qrRef.current.stop();
           qrRef.current = null;
         }
-
         if (!mounted) return;
-
-        // Initialize new scanner
-        qrRef.current = new Html5Qrcode('qr-reader');
-        
+        // Use global Html5Qrcode
+        qrRef.current = new (window as any).Html5Qrcode('qr-reader');
         await qrRef.current.start(
           { facingMode: 'environment' },
           {
@@ -55,21 +52,19 @@ const QRScanModal: React.FC<QRScanModalProps> = ({ isOpen, onClose, onScanSucces
             qrbox: { width: 250, height: 250 },
             aspectRatio: 1,
           },
-          (decodedText) => {
+          (decodedText: string) => {
             if (mounted) {
               handleSuccess(decodedText);
             }
           },
-          () => {} // Ignore errors during scanning
+          () => {}
         );
       } catch (err) {
         console.error('Error initializing QR scanner:', err);
         setError("Could not access camera. Please ensure you've granted camera permissions.");
       }
     };
-
     initializeScanner();
-
     return () => {
       mounted = false;
       if (qrRef.current) {
@@ -93,7 +88,6 @@ const QRScanModal: React.FC<QRScanModalProps> = ({ isOpen, onClose, onScanSucces
             <X size={20} />
           </button>
         </div>
-        
         <div className="relative mb-4">
           {error ? (
             <div className="w-full aspect-square bg-gray-100 rounded-lg flex items-center justify-center p-4 text-center text-red-500">
@@ -101,9 +95,9 @@ const QRScanModal: React.FC<QRScanModalProps> = ({ isOpen, onClose, onScanSucces
             </div>
           ) : (
             <>
-              <div 
-                id="qr-reader" 
-                ref={containerRef} 
+              <div
+                id="qr-reader"
+                ref={containerRef}
                 className="w-full aspect-square bg-gray-100 rounded-lg overflow-hidden"
               />
               <div className="absolute inset-0 pointer-events-none">
@@ -116,7 +110,6 @@ const QRScanModal: React.FC<QRScanModalProps> = ({ isOpen, onClose, onScanSucces
             </>
           )}
         </div>
-        
         <div className="flex items-center text-sm text-gray-600 bg-blue-50 p-3 rounded-md">
           <Camera size={16} className="mr-2 text-blue-500" />
           <p>Position the QR code within the frame to scan</p>
