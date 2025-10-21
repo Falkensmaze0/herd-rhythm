@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
+# Ignore Next.js build output
+.next
 
 # Editor directories and files
 .vscode/*
