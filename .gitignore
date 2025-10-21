@@ -25,3 +25,15 @@ dist-ssr
 *.sln
 *.sw?
 .env
+.next/static/development/_buildManifest.js
+.next/static/webpack/8aa25ed168c291d2.webpack.hot-update.json
+.next/static/webpack/31abeb1060518d82.webpack.hot-update.json
+.next/static/webpack/747ea41feb9af700.webpack.hot-update.json
+.next/static/webpack/484953a9e3874a0c.webpack.hot-update.json
+.next/static/webpack/812880ea903d2e5b.webpack.hot-update.json
+.next/static/webpack/webpack.8aa25ed168c291d2.hot-update.js
+.next/static/webpack/webpack.31abeb1060518d82.hot-update.js
+.next/static/webpack/webpack.747ea41feb9af700.hot-update.js
+.next/static/webpack/webpack.484953a9e3874a0c.hot-update.js
+.next/static/webpack/webpack.812880ea903d2e5b.hot-update.js
+.next/static/webpack/pages/_app.747ea41feb9af700.hot-update.js
