@@ -1,31 +1,48 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { ReminderService, WorkforceForecast as WorkforceForecastType } from '../../services/ReminderService';
 import { ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { Reminder, Cow, SyncMethod } from '../../types';
 
 interface WorkforceForecastProps {
-  reminders: any[];
-  cows: any[];
-  syncMethods: any[];
+  reminders: Reminder[];
+  cows: Cow[];
+  syncMethods: SyncMethod[];
 }
 
 const WorkforceForecast: React.FC<WorkforceForecastProps> = ({ reminders, cows, syncMethods }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [selectedDay, setSelectedDay] = useState<WorkforceForecastType | null>(null);
 
-  // Initialize ReminderService and generate forecast
-  ReminderService.initialize(reminders, cows, syncMethods);
-  const forecastData = ReminderService.generateWorkforceForecast(14);
+  // Initialize ReminderService when data changes
+  useEffect(() => {
+    ReminderService.initialize(reminders, cows, syncMethods);
+  }, [reminders, cows, syncMethods]);
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  // Memoize forecast data
+  const forecastData = useMemo(() => {
+    return ReminderService.generateWorkforceForecast(14);
+  }, []); // No dependencies needed since we handle updates in useEffect
+
+  interface TooltipProps {
+    active?: boolean;
+    payload?: {
+      value: number;
+      name: string;
+      dataKey: string;
+      color: string;
+    }[];
+    label?: string;
+  }
+
+  const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
     if (active && payload && payload.length) {
       const dayData = forecastData.find(d => d.date === label);
       return (
         <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900 mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} style={{ color: entry.color }} className="text-sm">
+          {payload?.map((entry, index: number) => (            <p key={index} style={{ color: entry.color }} className="text-sm">
               {entry.name}: {entry.value} personnel
             </p>
           ))}
@@ -45,8 +62,16 @@ const WorkforceForecast: React.FC<WorkforceForecastProps> = ({ reminders, cows, 
     return null;
   };
 
-  const handleDayClick = (data: any) => {
-    const dayData = forecastData.find(d => d.date === data.date);
+  interface ChartClickData {
+    activePayload?: Array<{
+      payload: WorkforceForecastType;
+    }>;
+  }
+
+  const handleDayClick = (data: ChartClickData) => {
+    if (!data || !data.activePayload?.[0]) return;
+    const clickedData = data.activePayload[0].payload;
+    const dayData = forecastData.find(d => d.date === clickedData.date);
     setSelectedDay(dayData || null);
   };
 

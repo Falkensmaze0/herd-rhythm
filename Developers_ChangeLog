@@ -1,0 +1,3 @@
+[YYYY-MM-DD] TypeScript isolatedModules export fix:
+- Changed re-export of ManagerAnalytics in src/types/index.ts to use `export type { ManagerAnalytics } from './manager';` for compatibility with TypeScript's isolatedModules.
+- Resolves TS2305 error and ensures proper type-only (interface) exports for downstream imports in ManagerDashboard and related dashboard code.

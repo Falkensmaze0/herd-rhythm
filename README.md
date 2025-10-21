@@ -1,22 +1,11 @@
-# CattleSync 
+# Herd Rhythm
 
 ## Project info
 
 **URL**: https://lovable.dev/projects/ebbbc4cc-9cf5-4537-9cfa-684297ec4ded
 
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/ebbbc4cc-9cf5-4537-9cfa-684297ec4ded) and start prompting.
 
 Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
@@ -61,18 +50,6 @@ This project is built with:
 - Tailwind CSS
 - Prisma
 - PostgreSQL
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/ebbbc4cc-9cf5-4537-9cfa-684297ec4ded) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
 
 ## Backend API & Database
 
@@ -133,3 +110,4 @@ The sample seed mirrors the original mock data so the UI continues to display me
 4. Trigger a redeploy. The API routes will automatically connect to the provisioned database at runtime using the `DATABASE_URL` secret.
 
 For Vercel Postgres specifically, ensure `?sslmode=require` is appended to the URL and enable the "Prisma" integration to manage connection pooling automatically.
+

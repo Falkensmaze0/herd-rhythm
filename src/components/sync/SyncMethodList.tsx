@@ -1,32 +1,90 @@
 
-import React from 'react';
-import { SyncMethod } from '../../types';
+import React, { useState } from 'react';
+import { addDays } from 'date-fns';
+import { SyncMethod, Cow } from '../../types';
 import { Settings } from 'lucide-react';
+import CowSelectDialog from './CowSelectDialog';
 
 interface SyncMethodListProps {
   methods: SyncMethod[];
+  cows: Cow[];
   onSelectMethod: (method: SyncMethod) => void;
   onEditMethod: (method: SyncMethod) => void;
   onDeleteMethod: (id: string) => void;
   onCreateNew: () => void;
   onWorkforceSetup?: (method: SyncMethod) => void;
+  onApplyProtocol: (cow: Cow, syncMethod: SyncMethod) => Promise<void>;
+  setShowCowForm?: (show: boolean) => void;
 }
 
 const SyncMethodList: React.FC<SyncMethodListProps> = ({
   methods,
+  cows,
   onSelectMethod,
   onEditMethod,
   onDeleteMethod,
   onCreateNew,
-  onWorkforceSetup
+  onWorkforceSetup,
+  onApplyProtocol,
+  setShowCowForm
 }) => {
+  const [selectedMethod, setSelectedMethod] = useState<SyncMethod | null>(null);
+
+  const handleSelectMethod = (method: SyncMethod) => {
+    setSelectedMethod(method);
+    onSelectMethod(method);
+  };
+
+  const handleCowSelect = async (cow: Cow, syncMethod: SyncMethod) => {
+    if (cow.status === 'sick' || cow.status === 'retired' || cow.status === 'pregnant') {
+      alert(`Cannot apply protocol to ${cow.status} cow`);
+      return;
+    }
+    // Prevent protocol if cow already has an active protocol (future reminders for this cow)
+    const hasActiveProtocol = cows
+      .find(c => c.id === cow.id)?.reminders?.some(r => !r.completed && new Date(r.dueDate) >= new Date());
+    if (hasActiveProtocol) {
+      alert('This cow already has an active protocol.');
+      return;
+    }
+    const startDate = new Date();
+    const reminders = syncMethod.steps.map(step => ({
+      id: `${cow.id}-${step.id}-${Date.now()}`,
+      cowId: cow.id,
+      syncMethodId: syncMethod.id,
+      type: 'custom' as const,
+      title: step.title,
+      description: step.description,
+      dueDate: addDays(startDate, step.day).toISOString(),
+      completed: false,
+      priority: 'medium' as const,
+      syncStepId: step.id,
+      workforceSnapshot: {
+        workers: step.workforceRequirements?.worker_per_cows ? 1 : 0,
+        technicians: step.workforceRequirements?.technician_per_cows ? 1 : 0,
+        doctors: step.workforceRequirements?.doctor_per_cows ? 1 : 0
+      }
+    }));
+    
+    onApplyProtocol(cow, syncMethod);
+  };
   return (
     <div className="vet-card">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Synchronization Methods</h2>
-        <button onClick={onCreateNew} className="vet-button-primary">
-          Create Custom Method
-        </button>
+        <div className="flex space-x-4">
+          <button onClick={onCreateNew} className="vet-button-primary">
+            Create Custom Method
+          </button>
+          <button
+            onClick={() => {
+              if (typeof setShowCowForm === 'function') setShowCowForm(true);
+            }}
+            className="vet-button-secondary"
+          >
+            Add New Cow
+          </button>
+        </div>
       </div>
       
       <div className="grid gap-4">
@@ -80,7 +138,7 @@ const SyncMethodList: React.FC<SyncMethodListProps> = ({
               
               <div className="flex flex-col space-y-2 ml-4">
                 <button
-                  onClick={() => onSelectMethod(method)}
+                  onClick={() => handleSelectMethod(method)}
                   className="vet-button-primary text-sm"
                 >
                   Use Protocol
@@ -115,6 +173,16 @@ const SyncMethodList: React.FC<SyncMethodListProps> = ({
           </div>
         ))}
       </div>
+
+      {selectedMethod && (
+        <CowSelectDialog
+          isOpen={!!selectedMethod}
+          onClose={() => setSelectedMethod(null)}
+          onCowSelect={handleCowSelect}
+          syncMethod={selectedMethod}
+          cows={cows}
+        />
+      )}
     </div>
   );
 };

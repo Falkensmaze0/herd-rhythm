@@ -7,11 +7,203 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Cow {
+  id           String     @id @default(cuid())
+  name         String
+  breed        String
+  age          Int
+  lastSyncDate DateTime
+  healthNotes  String?
+  status       CowStatus  @default(active)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  reminders    Reminder[]
+  animalEvents AnimalEvent[] // relation to AnimalEvent
+}
+
+model SyncMethod {
+  id                   String     @id @default(cuid())
+  name                 String
+  description          String?
+  duration             Int
+  isCustom             Boolean    @default(false)
+  hasWorkforceSettings Boolean    @default(false)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  reminders            Reminder[]
+  steps                SyncStep[]
+}
+
+model SyncStep {
+  id                    String     @id @default(cuid())
+  syncMethodId          String
+  day                   Int
+  title                 String
+  description           String?
+  hormoneType           String?
+  notes                 String?
+  workforceRequirements Json?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  reminders             Reminder[]
+  syncMethod            SyncMethod @relation(fields: [syncMethodId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id                   String             @id @default(cuid())
+  email                String             @unique
+  name                 String
+  password             String
+  role                 UserRole           @default(technician)
+  isActive             Boolean            @default(true)
+  emailVerified        DateTime?
+  lastLogin            DateTime?
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
+  twoFactorSecret      String?
+  twoFactorEnabled     Boolean            @default(false)
+  avatar               String?
+  phone                String?
+  department           String?
+  licenseNumber        String?
+  specializations      Json?
+  preferences          Json?
+  timezone             String             @default("UTC")
+  language             String             @default("en")
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  auditLogs            AuditLog[]
+  sessions             Session[]
+  systemLogs           SystemLog[]
+  notifications        UserNotification[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  ipAddress    String?
+  userAgent    String?
+  location     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id           String     @id @default(cuid())
+  userId       String?
+  sessionId    String?
+  action       ActionType
+  resource     String
+  resourceId   String?
+  oldValues    Json?
+  newValues    Json?
+  ipAddress    String?
+  userAgent    String?
+  success      Boolean    @default(true)
+  errorMessage String?
+  duration     Int?
+  createdAt    DateTime   @default(now())
+  user         User?      @relation(fields: [userId], references: [id])
+}
+
+model SystemLog {
+  id             String   @id @default(cuid())
+  level          LogLevel
+  category       String
+  message        String
+  details        Json?
+  source         String?
+  stackTrace     String?
+  userId         String?
+  sessionId      String?
+  memoryUsage    Float?
+  cpuUsage       Float?
+  responseTime   Int?
+  queryCount     Int?
+  diskUsage      Float?
+  networkLatency Float?
+  createdAt      DateTime @default(now())
+  user           User?    @relation(fields: [userId], references: [id])
+}
+
+model SystemMetrics {
+  id                String   @id @default(cuid())
+  timestamp         DateTime @default(now())
+  cpuUsage          Float
+  memoryUsage       Float
+  diskUsage         Float
+  networkIn         Float
+  networkOut        Float
+  dbConnections     Int
+  dbResponseTime    Float
+  dbQueryCount      Int
+  dbSlowQueries     Int
+  activeUsers       Int
+  requestsPerMinute Int
+  errorRate         Float
+  uptime            Int
+  totalCows         Int
+  activeReminders   Int
+  completedTasks    Int
+  systemAlerts      Int
+}
+
+model UserNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String
+  priority  String
+  read      Boolean  @default(false)
+  actionUrl String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Reminder {
+  id                String           @id @default(cuid())
+  cowId             String
+  title             String
+  description       String?
+  dueDate           DateTime
+  completed         Boolean          @default(false)
+  priority          ReminderPriority @default(medium)
+  type              ReminderType
+  syncMethodId      String?
+  syncStepId        String?
+  estimatedCowCount Int?
+  workforceSnapshot Json?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  cow               Cow              @relation(fields: [cowId], references: [id], onDelete: Cascade)
+  syncMethod        SyncMethod?      @relation(fields: [syncMethodId], references: [id])
+  syncStep          SyncStep?        @relation(fields: [syncStepId], references: [id])
+}
+model AnimalEvent {
+  id        String   @id @default(cuid())
+  cowId     String
+  eventType String   // illness, death, recovery, pregnancy, etc.
+  outcome   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cow Cow @relation(fields: [cowId], references: [id], onDelete: Cascade)
+}
+
 enum CowStatus {
   active
   pregnant
   sick
   retired
+  quarantine
+  breeding
+  dry
 }
 
 enum ReminderPriority {
@@ -25,65 +217,44 @@ enum ReminderType {
   checkup
   ai
   custom
+  medication
+  vaccination
+  pregnancy_check
+  breeding
+  feeding
+  maintenance
 }
 
-model Cow {
-  id            String     @id @default(cuid())
-  name          String
-  breed         String
-  age           Int
-  lastSyncDate  DateTime
-  healthNotes   String?
-  status        CowStatus  @default(active)
-  reminders     Reminder[]
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+enum UserRole {
+  admin
+  manager
+  doctor
+  technician
+  helper
+  office
 }
 
-model SyncMethod {
-  id                   String     @id @default(cuid())
-  name                 String
-  description          String?
-  duration             Int
-  isCustom             Boolean   @default(false)
-  hasWorkforceSettings Boolean   @default(false)
-  steps                SyncStep[]
-  reminders            Reminder[]
-  createdAt            DateTime   @default(now())
-  updatedAt            DateTime   @updatedAt
+enum LogLevel {
+  debug
+  info
+  warn
+  error
+  critical
 }
 
-model SyncStep {
-  id                    String     @id @default(cuid())
-  syncMethod            SyncMethod @relation(fields: [syncMethodId], references: [id], onDelete: Cascade)
-  syncMethodId          String
-  day                   Int
-  title                 String
-  description           String?
-  hormoneType           String?
-  notes                 String?
-  workforceRequirements Json?
-  reminders             Reminder[]
-  createdAt             DateTime   @default(now())
-  updatedAt             DateTime   @updatedAt
-}
-
-model Reminder {
-  id                String          @id @default(cuid())
-  cow               Cow             @relation(fields: [cowId], references: [id], onDelete: Cascade)
-  cowId             String
-  title             String
-  description       String?
-  dueDate           DateTime
-  completed         Boolean         @default(false)
-  priority          ReminderPriority @default(medium)
-  type              ReminderType
-  syncMethod        SyncMethod?     @relation(fields: [syncMethodId], references: [id], onDelete: SetNull)
-  syncMethodId      String?
-  syncStep          SyncStep?       @relation(fields: [syncStepId], references: [id], onDelete: SetNull)
-  syncStepId        String?
-  estimatedCowCount Int?
-  workforceSnapshot Json?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+enum ActionType {
+  login
+  logout
+  create
+  update
+  delete
+  view
+  export
+  import
+  system_change
+  user_management
+  data_access
+  api_call
+  error_occurrence
+  performance_issue
 }

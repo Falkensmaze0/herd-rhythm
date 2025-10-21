@@ -28,7 +28,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ analytics }) => {
     },
     {
       title: 'Pregnancy Rate',
-      value: `${analytics.pregnancyRate}%`,
+      value: `${analytics.pregnancyRate.toFixed(2)}%`,
       icon: '📊',
       color: 'bg-purple-50 text-purple-600'
     }

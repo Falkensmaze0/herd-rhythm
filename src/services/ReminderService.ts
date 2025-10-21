@@ -93,13 +93,20 @@ class ReminderServiceClass {
   }
 
   // Calculate workforce requirements for a task
-  calculateWorkforceForTask(taskType: string, cowCount: number, customRequirements?: any): WorkforceRequirement {
+  calculateWorkforceForTask(
+    taskType: string,
+    cowCount: number,
+    customRequirements?: WorkforceDefaults[string]
+  ): WorkforceRequirement {
     const requirements = customRequirements || DEFAULT_WORKFORCE_REQUIREMENTS[taskType] || DEFAULT_WORKFORCE_REQUIREMENTS['custom'];
     
     return {
-      workers: requirements.worker_per_cows ? Math.ceil(cowCount / requirements.worker_per_cows) : 0,
-      technicians: requirements.technician_per_cows ? Math.ceil(cowCount / requirements.technician_per_cows) : 0,
-      doctors: requirements.doctor_per_cows ? Math.ceil(cowCount / requirements.doctor_per_cows) : 0
+      workers: requirements.worker_per_cows && requirements.worker_per_cows > 0 ? 
+        Math.max(1, Math.ceil(cowCount / requirements.worker_per_cows)) : 0,
+      technicians: requirements.technician_per_cows && requirements.technician_per_cows > 0 ? 
+        Math.max(1, Math.ceil(cowCount / requirements.technician_per_cows)) : 0,
+      doctors: requirements.doctor_per_cows && requirements.doctor_per_cows > 0 ? 
+        Math.max(1, Math.ceil(cowCount / requirements.doctor_per_cows)) : 0
     };
   }
 
@@ -124,14 +131,22 @@ class ReminderServiceClass {
         }
         groups[key].reminders.push(reminder);
         return groups;
-      }, {} as any);
+      }, {} as Record<string, {
+        task: string;
+        type: string;
+        reminders: Reminder[];
+      }>);
 
       let totalWorkers = 0;
       let totalTechnicians = 0;
       let totalDoctors = 0;
-      const taskBreakdown: any[] = [];
+      const taskBreakdown: Array<{
+        task: string;
+        cowCount: number;
+        workforceNeeded: WorkforceRequirement;
+      }> = [];
 
-      Object.values(taskGroups).forEach((group: any) => {
+      Object.values(taskGroups).forEach((group) => {
         const cowCount = group.reminders.length;
         const workforceNeeded = this.calculateWorkforceForTask(group.type, cowCount);
         
