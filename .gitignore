@@ -37,3 +37,5 @@ dist-ssr
 .next/static/webpack/webpack.484953a9e3874a0c.hot-update.js
 .next/static/webpack/webpack.812880ea903d2e5b.hot-update.js
 .next/static/webpack/pages/_app.747ea41feb9af700.hot-update.js
+.next/cache/webpack/server-development/5.pack.gz
+.next/cache/webpack/server-development/6.pack.gz

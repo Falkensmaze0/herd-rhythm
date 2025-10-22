@@ -42,6 +42,17 @@
     --sidebar-accent-foreground: 15 23 42;
     --sidebar-border: 226 232 240;
     --sidebar-ring: 59 130 246;
+
+    /* Added semantic tokens for UI/priority/alert/success */
+    --priority-high: 239 68 68;        /* red */
+    --priority-medium: 254 204 27;     /* yellow */
+    --priority-low: 34 197 94;         /* green */
+    --priority-default: 100 116 139;   /* muted gray */
+    --success: 34 197 94;              /* green for success */
+    --success-dark: 22 163 74;         /* deeper green */
+    --hover: 241 245 249;              /* subtle hover for light */
+    --primary-light: 191 219 254;      /* pale blue for selection */
+    --primary-dark: 30 64 175;         /* dark primary */
   }
 }
 
@@ -67,4 +78,58 @@
   .vet-button-secondary {
     @apply bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors duration-200 font-medium;
   }
+}
+
+
+/* Dark mode color tokens */
+.dark {
+  --background: 18 23 34;                 /* deep navy/slate, soothing, not harsh */
+  --foreground: 230 235 245;              /* soft near-white for text */
+
+  --card: 28 35 50;                       /* slightly lighter than background */
+  --card-foreground: 230 235 245;
+
+  --popover: 28 35 50;
+  --popover-foreground: 230 235 245;
+
+  --primary: 64 102 225;                  /* soft blue as primary accent */
+  --primary-foreground: 250 250 255;      /* almost pure white for contrast */
+
+  --secondary: 38 45 58;                  /* muted, lighter dark */
+  --secondary-foreground: 214 219 224;
+
+  --muted: 38 45 58;
+  --muted-foreground: 134 148 168;
+
+  --accent: 52 60 75;                     /* accent, slightly blue-gray */
+  --accent-foreground: 230 235 245;
+
+  --destructive: 180 42 42;               /* soft red, not harsh */
+  --destructive-foreground: 250 250 255;
+
+  --border: 44 51 65;                     /* subtle border against dark background */
+  --input: 44 51 65;
+  --ring: 129 173 243;                    /* faint blue ring for focus */
+
+  --radius: 0.5rem;
+
+  --sidebar-background: 23 29 41;
+  --sidebar-foreground: 170 180 195;
+  --sidebar-primary: 64 102 225;
+  --sidebar-primary-foreground: 250 250 255;
+  --sidebar-accent: 36 40 55;
+  --sidebar-accent-foreground: 230 235 245;
+  --sidebar-border: 44 51 65;
+  --sidebar-ring: 129 173 243;
+
+  /* Added semantic tokens for UI/priority/alert/success (DARK) */
+  --priority-high: 180 42 42;         /* dark red */
+  --priority-medium: 204 163 0;       /* muted yellow */
+  --priority-low: 54 179 126;         /* gentle green */
+  --priority-default: 134 148 168;    /* muted gray */
+  --success: 54 179 126;              /* green for success */
+  --success-dark: 22 120 74;          /* deep night green */
+  --hover: 28 35 50;                  /* subtle hover for dark */
+  --primary-light: 129 173 243;       /* blue for selection */
+  --primary-dark: 30 64 175;          /* deep brand blue */
 }

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getRoleConfig, getRoleDisplayName } from '@/config/roleConfig';
@@ -34,7 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
   
   // Use role-specific navigation items or fallback to legacy items
   const navigationItems = roleConfig?.navigationItems || [
-    { id: 'dashboard', label: 'Dashboard', icon: '📊', path: '/dashboard' },
+    { id: 'dashboard', label: 'Dashboard', icon: '📊', path: '/' },
     { id: 'reminders', label: 'Cow Reminders', icon: '⏰', path: '/reminders' },
     { id: 'sync-methods', label: 'Sync Methods', icon: '🔬', path: '/sync-methods' },
     { id: 'analytics', label: 'Analytics', icon: '📈', path: '/analytics' },
@@ -188,3 +187,4 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
 };
 
 export default Sidebar;
+

@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import NeonPromptInput from '@/components/ui/NeonPromptInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { WidgetPlaceholder } from './WidgetPlaceholder';
@@ -281,6 +282,10 @@ export const RoleLanding: React.FC<RoleLandingProps> = ({ config, className }) =
                   </section>
                 ))}
               </div>
+              <NeonPromptInput
+                userRole={user?.role ?? ''}
+                tabId={tab.id}
+              />
             </TabsContent>
           ))}
         </Tabs>

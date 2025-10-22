@@ -8,6 +8,8 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { AuthUser, LoginCredentials, RegisterData, UserRole } from '@/types';
 import { AuthService } from '@/services/AuthService';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/router';
+
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -49,17 +51,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Handles role-based redirects after login/session validation
   // Assumes next/router for navigation
-  let router: any;
-  try {
-    // Dynamic import in case file is used in environments w/o router
-    // (to avoid next/router SSR errors)
-    // Could also use next/navigation in app dir
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    router = require('next/router').useRouter();
-  } catch {}
-
+  const router = useRouter();
   useEffect(() => {
-    if (user && user.role && router) {
+    if (user && user.role) {
       const path = ROLE_HOME_ROUTE[user.role];
       if (path && router.pathname !== path) {
         router.push(path);
@@ -168,9 +162,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       const sessionToken = localStorage.getItem('sessionToken');
-      
       if (sessionToken) {
-        // POST to logout API endpoint; server will clear session and cookies
         await fetch('/api/auth/logout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -180,17 +172,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // Always clear local state
       setUser(null);
       localStorage.removeItem('sessionToken');
       removeCookie('sessionToken');
       setIsLoading(false);
-      
       toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.',
         variant: 'default',
       });
+      router.push('/login'); // Redirect after logout
     }
   };
 

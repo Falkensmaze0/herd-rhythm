@@ -1,4 +1,4 @@
- The suggested edits should follow the existing changelog format and be placed in the appropriate section.
+The suggested edits should follow the existing changelog format and be placed in the appropriate section.
 
 ## [Unreleased] – 2025-10-20
 
@@ -9,7 +9,20 @@
 - Confirmed stable production build and runtime, with all role landings and API endpoints reachable
 - New standard: Always use explicit, extensible typing for dynamic objects in backend/TypeScript to avoid future assignment and mutation errors
 
-## Latest UI Updates
+## Latest UI Updates- Injected NeonPromptInput into each tab panel in RoleLanding, passing user role and tab context. Modular, easy to extend per tab/user.
+
+- Created src/components/ui/NeonPromptInput.tsx with prop-driven appearance, theme neon glow, and async submission to backend.
+- Implemented /api/ai-agent-proxy Next.js endpoint, designed for role/tab/prompt transfer; future-proof for remote proxying.
+- Added Python FastAPI microservice accepting tab/user context and prompt, system prompt is set to "you're batman". External LLM API base/key are configured via env; all agent logic is modular.
+- Docs and .env.example for Python microservice generated.// ... existing content ...
+
+## Feature: Global Dark/Light Mode Support
+
+- The entire application now supports a global dark/light theme.
+- Theme can be toggled at any time via the theme switcher (top right of screen).
+- Theme choice persists (remembers user preference and system default).
+- All backgrounds, cards, text, sidebars, and controls now maintain high contrast and soothing colors in both modes.
+- UI updates instantly and consistently on theme toggle.
 
 - Refactored `RoleLanding` (admin): Added a glassy, modular command surface header. Contains executive summary, quick navigation (Overview, Profile, Settings), and Log Out button with contextual UX.
 - Fixed tab overflow: Adjusted `<TabsList>` container to use `w-full`, `flex-wrap`, and `overflow-hidden`, ensuring tabs never overflow for roles with many module tabs and mobile/small screens.
@@ -63,3 +76,9 @@
 ---
 
 This updated changelog now accurately reflects the changes made to the ManagerDashboard component, as well as the addition of a new type file. The suggested edits have been placed in the appropriate section of the existing changelog format.
+
+- Refactored `src/components/reminders/ReminderCalendar.tsx`:
+- Replaced template literals in JSX className attributes with an array of class tokens joined by space. This avoids JSX/TSX parsing issues, improves build safety, and aligns class logic with the theme/token system.
+- Ensured reminder cell and day cell classNames are safely constructed for reliable dark/light theme integration.
+- Confirmed 100% tokenized color usage for all ReminderCalendar UI elements.
+- Successful build with theme infrastructure fully operational.

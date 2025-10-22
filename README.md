@@ -4,7 +4,6 @@
 
 **URL**: https://lovable.dev/projects/ebbbc4cc-9cf5-4537-9cfa-684297ec4ded
 
-
 Changes made via Lovable will be committed automatically to this repo.
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
@@ -55,15 +54,15 @@ This project is built with:
 
 The application now exposes a RESTful API powered by Next.js API routes and backed by a PostgreSQL database via Prisma. The primary endpoints are:
 
-| Route | Methods | Description |
-|-------|---------|-------------|
-| `/api/cows` | `GET`, `POST` | List cows or create a new cow record. |
-| `/api/cows/[id]` | `GET`, `PUT`, `DELETE` | Retrieve, update, or remove a specific cow. |
-| `/api/reminders` | `GET`, `POST` | Manage reminder collection. |
-| `/api/reminders/[id]` | `GET`, `PATCH`, `PUT`, `DELETE` | Work with a single reminder, including completion updates. |
-| `/api/sync-methods` | `GET`, `POST` | Manage synchronization protocol definitions. |
-| `/api/sync-methods/[id]` | `GET`, `PUT`, `DELETE` | View or modify a specific synchronization method. |
-| `/api/analytics` | `GET` | Returns dashboard analytics calculated from live data. |
+| Route                    | Methods                         | Description                                                |
+| ------------------------ | ------------------------------- | ---------------------------------------------------------- |
+| `/api/cows`              | `GET`, `POST`                   | List cows or create a new cow record.                      |
+| `/api/cows/[id]`         | `GET`, `PUT`, `DELETE`          | Retrieve, update, or remove a specific cow.                |
+| `/api/reminders`         | `GET`, `POST`                   | Manage reminder collection.                                |
+| `/api/reminders/[id]`    | `GET`, `PATCH`, `PUT`, `DELETE` | Work with a single reminder, including completion updates. |
+| `/api/sync-methods`      | `GET`, `POST`                   | Manage synchronization protocol definitions.               |
+| `/api/sync-methods/[id]` | `GET`, `PUT`, `DELETE`          | View or modify a specific synchronization method.          |
+| `/api/analytics`         | `GET`                           | Returns dashboard analytics calculated from live data.     |
 
 ### Local setup
 
@@ -107,7 +106,24 @@ The sample seed mirrors the original mock data so the UI continues to display me
    ```
 
    When deploying via Vercel’s Git integration, you can add these commands to the **Build Command** or a [post-install script](https://vercel.com/docs/deployments/configure-a-build#install-command) as needed.
+
 4. Trigger a redeploy. The API routes will automatically connect to the provisioned database at runtime using the `DATABASE_URL` secret.
 
 For Vercel Postgres specifically, ensure `?sslmode=require` is appended to the URL and enable the "Prisma" integration to manage connection pooling automatically.
 
+## Neon Tab Input & AI Integration
+
+Each dashboard tab now features a bottom-anchored input box with rounded corners and neon-glow styling. This input sends its prompt, the current user's role, and parent tab identity to the backend via a dedicated API endpoint:
+
+| Route                 | Methods | Description                                                                                           |
+| --------------------- | ------- | ----------------------------------------------------------------------------------------------------- |
+| `/api/ai-agent-proxy` | `POST`  | Receives `{ prompt, userRole, tabId }` from the UI. Meant for contextual, role-aware prompt handling. |
+
+### Python LLM Service
+
+A scalable FastAPI microservice (`batman_llm_service`) powers the LLM backend. Every request is enriched with a system prompt (`you're batman`) for distinct persona modeling. The service supports modular backend configuration via `.env`:
+
+- `LLM_apiBase`: URL for any OpenAI-compatible endpoint
+- `LLM_apiKey`: Optional, if provider requires authentication
+
+See `batman_llm_service/README.md` for usage and deployment details.
