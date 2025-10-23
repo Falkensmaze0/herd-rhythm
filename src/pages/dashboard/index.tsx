@@ -1,24 +1,52 @@
-import { useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { useAuth } from '@/contexts/AuthContext';
+
+import { GetServerSideProps } from 'next';
 import { DashboardRouter } from '@/components/dashboards/DashboardRouter';
+import { AuthService } from '@/services/AuthService.server';
 
-export function DashboardPage() {
-  const { user } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-  }, [user, router]);
-
-  if (!user) {
-    return null;
-  }
-
+export default function DashboardPage() {
   return <DashboardRouter />;
 }
 
-export default DashboardPage;
+export const getServerSideProps: GetServerSideProps = async ({ req }) => {
+  const sessionToken = req.cookies.sessionToken;
+
+  if (!sessionToken) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+
+  try {
+    const user = await AuthService.validateSession(sessionToken);
+    if (!user) {
+      return {
+        redirect: {
+          destination: '/login',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        }
+      },
+    };
+  } catch (error) {
+    console.error('Session validation error:', error);
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+};

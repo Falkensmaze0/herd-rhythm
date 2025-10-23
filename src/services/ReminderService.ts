@@ -21,7 +21,7 @@ export interface WorkforceForecast {
   workers: number;
   technicians: number;
   doctors: number;
-  taskBreakdown: Array<{
+  taskBreakdown?: Array<{
     task: string;
     cowCount: number;
     workforceNeeded: WorkforceRequirement;

@@ -21,7 +21,8 @@ import { Separator } from '@/components/ui/separator';
 import { getRoleConfig } from '@/config/roleConfig';
 import WorkforceForecastChart from '@/components/dashboards/manager/WorkforceForecastChart';
 
-import { Reminder, Cow, SyncMethod, Analytics, User } from '@/types';
+import { Reminder, Cow, SyncMethod, User } from '@/types';
+import type { ManagerAnalytics } from '@/types/manager';
 
 // --- Types & Utility ---
 type ReminderGroupKey = { groupType: string; groupPriority: string };
@@ -38,8 +39,9 @@ function groupReminders(reminders: Reminder[]) {
 }
 
 export const ManagerDashboard: React.FC = () => {
+  console.log('ManagerDashboard: Component mounting');
   const { user } = useAuth();
-  const [analyticsData, setAnalyticsData] = useState<Analytics | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<ManagerAnalytics | null>(null);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [cows, setCows] = useState<Cow[]>([]);
   const [syncMethods, setSyncMethods] = useState<SyncMethod[]>([]);
@@ -57,12 +59,17 @@ export const ManagerDashboard: React.FC = () => {
 
   // --- Load dashboard "data lake" ---
   useEffect(() => {
+    console.log('ManagerDashboard: Starting data fetch, windowParam:', windowParam);
     let active = true;
     async function fetchAll() {
       setLoading(true);
       try {
         // Analytics
-        const analyticsRes = await fetch(`/api/manager/analytics?window=${windowParam}`);
+        const analyticsRes = await fetch(`/api/manager/analytics?window=${windowParam}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`
+          }
+        });
         const analyticsJson = analyticsRes.ok ? await analyticsRes.json() : null;
         if (active) setAnalyticsData(analyticsJson?.data || null);
 
@@ -178,7 +185,7 @@ export const ManagerDashboard: React.FC = () => {
   const todaysReminders = reminders.filter(r => r.dueDate.startsWith(today) && !r.completed);
 
   // --- Details group extraction for modal ---
-  let modalDetails = null;
+  let modalDetails: JSX.Element | null = null;
   if (detailsGroupKey && reminderGroupCache[detailsGroupKey]) {
     const [groupType, groupPriority] = detailsGroupKey.split('-');
     modalDetails = (

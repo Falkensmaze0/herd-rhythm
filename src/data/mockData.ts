@@ -102,7 +102,9 @@ export const mockReminders: Reminder[] = [
       workers: 1,
       technicians: 1,
       doctors: 0
-    }
+    },
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '2',
@@ -114,7 +116,11 @@ export const mockReminders: Reminder[] = [
     priority: 'high',
     type: 'injection',
     syncMethodId: 'ovsynch',
-    syncStepId: '1'
+    syncStepId: '1',
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '3',
@@ -126,7 +132,11 @@ export const mockReminders: Reminder[] = [
     priority: 'high',
     type: 'custom',
     syncMethodId: 'cidr',
-    syncStepId: '1'
+    syncStepId: '1',
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '4',
@@ -136,7 +146,13 @@ export const mockReminders: Reminder[] = [
     dueDate: '2024-06-02',
     completed: false,
     priority: 'medium',
-    type: 'checkup'
+    type: 'checkup',
+    syncMethodId: null,
+    syncStepId: null,
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
 
   // Tomorrow's reminders (2024-06-03)
@@ -150,7 +166,11 @@ export const mockReminders: Reminder[] = [
     priority: 'medium',
     type: 'checkup',
     syncMethodId: 'selectsynch',
-    syncStepId: '3'
+    syncStepId: '3',
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '6',
@@ -162,7 +182,11 @@ export const mockReminders: Reminder[] = [
     priority: 'high',
     type: 'custom',
     syncMethodId: 'cidr',
-    syncStepId: '1'
+    syncStepId: '1',
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
 
   // Day after tomorrow (2024-06-04)
@@ -176,7 +200,11 @@ export const mockReminders: Reminder[] = [
     priority: 'high',
     type: 'ai',
     syncMethodId: 'ovsynch',
-    syncStepId: '4'
+    syncStepId: '4',
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '8',
@@ -188,7 +216,11 @@ export const mockReminders: Reminder[] = [
     priority: 'high',
     type: 'injection',
     syncMethodId: 'ovsynch',
-    syncStepId: '3'
+    syncStepId: '3',
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
 
   // Week ahead reminders
@@ -202,7 +234,11 @@ export const mockReminders: Reminder[] = [
     priority: 'high',
     type: 'injection',
     syncMethodId: 'ovsynch',
-    syncStepId: '2'
+    syncStepId: '2',
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '10',
@@ -214,7 +250,11 @@ export const mockReminders: Reminder[] = [
     priority: 'high',
     type: 'injection',
     syncMethodId: 'ovsynch',
-    syncStepId: '2'
+    syncStepId: '2',
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '11',
@@ -226,7 +266,11 @@ export const mockReminders: Reminder[] = [
     priority: 'high',
     type: 'custom',
     syncMethodId: 'cidr',
-    syncStepId: '2'
+    syncStepId: '2',
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '12',
@@ -238,7 +282,11 @@ export const mockReminders: Reminder[] = [
     priority: 'high',
     type: 'custom',
     syncMethodId: 'cidr',
-    syncStepId: '2'
+    syncStepId: '2',
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '13',
@@ -250,7 +298,11 @@ export const mockReminders: Reminder[] = [
     priority: 'high',
     type: 'ai',
     syncMethodId: 'selectsynch',
-    syncStepId: '4'
+    syncStepId: '4',
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '14',
@@ -262,7 +314,11 @@ export const mockReminders: Reminder[] = [
     priority: 'high',
     type: 'injection',
     syncMethodId: 'ovsynch',
-    syncStepId: '3'
+    syncStepId: '3',
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '15',
@@ -274,7 +330,11 @@ export const mockReminders: Reminder[] = [
     priority: 'high',
     type: 'injection',
     syncMethodId: 'ovsynch',
-    syncStepId: '3'
+    syncStepId: '3',
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '16',
@@ -286,7 +346,11 @@ export const mockReminders: Reminder[] = [
     priority: 'high',
     type: 'ai',
     syncMethodId: 'cidr',
-    syncStepId: '4'
+    syncStepId: '4',
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '17',
@@ -298,7 +362,11 @@ export const mockReminders: Reminder[] = [
     priority: 'high',
     type: 'ai',
     syncMethodId: 'cidr',
-    syncStepId: '4'
+    syncStepId: '4',
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '18',
@@ -310,7 +378,11 @@ export const mockReminders: Reminder[] = [
     priority: 'high',
     type: 'ai',
     syncMethodId: 'ovsynch',
-    syncStepId: '4'
+    syncStepId: '4',
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '19',
@@ -322,7 +394,11 @@ export const mockReminders: Reminder[] = [
     priority: 'high',
     type: 'ai',
     syncMethodId: 'ovsynch',
-    syncStepId: '4'
+    syncStepId: '4',
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '20',
@@ -332,7 +408,13 @@ export const mockReminders: Reminder[] = [
     dueDate: '2024-06-06',
     completed: false,
     priority: 'medium',
-    type: 'checkup'
+    type: 'checkup',
+    syncMethodId: null,
+    syncStepId: null,
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '21',
@@ -342,7 +424,13 @@ export const mockReminders: Reminder[] = [
     dueDate: '2024-06-07',
     completed: false,
     priority: 'low',
-    type: 'checkup'
+    type: 'checkup',
+    syncMethodId: null,
+    syncStepId: null,
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   },
   {
     id: '22',
@@ -352,7 +440,13 @@ export const mockReminders: Reminder[] = [
     dueDate: '2024-06-08',
     completed: false,
     priority: 'medium',
-    type: 'checkup'
+    type: 'checkup',
+    syncMethodId: null,
+    syncStepId: null,
+    estimatedCowCount: null,
+    workforceSnapshot: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01')
   }
 ];
 

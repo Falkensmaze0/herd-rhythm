@@ -11,6 +11,24 @@
 // Dependence: Expects global Html5Qrcode to be loaded. Consider dynamic feature detection and fallback.
 
 import React, { useEffect, useRef, useState } from 'react';
+
+declare global {
+  interface Window {
+    Html5Qrcode?: {
+      new (elementId: string): Html5QrcodeInstance;
+    };
+  }
+}
+
+interface Html5QrcodeInstance {
+  start(
+    cameraConfig: { facingMode: string },
+    config: { fps: number; qrbox: number },
+    onSuccess: (decodedText: string) => void,
+    onError: (err: string) => void
+  ): Promise<void>;
+  stop(): Promise<void>;
+}
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
@@ -32,11 +50,10 @@ export const QRScanModal: React.FC<QRScanModalProps> = ({
   const [active, setActive] = useState(false);
 
   useEffect(() => {
-    let html5QrCode: any;
+    let html5QrCode: Html5QrcodeInstance | undefined;
     if (isOpen && scannerRef.current) {
       setError(null);
       setActive(true);
-      // @ts-ignore
       if (window.Html5Qrcode) {
         html5QrCode = new window.Html5Qrcode(scannerRef.current.id);
         html5QrCode
@@ -45,13 +62,15 @@ export const QRScanModal: React.FC<QRScanModalProps> = ({
             { fps: 10, qrbox: 250 },
             (decodedText: string) => {
               setActive(false);
-              html5QrCode && html5QrCode.stop();
+              if (html5QrCode) {
+                html5QrCode.stop();
+              }
               onScanSuccess(decodedText);
               onClose();
             },
             (err: string) => {}
           )
-          .catch((e: any) => {
+          .catch((e: unknown) => {
             setError('Failed to access camera or initialize scanner.');
             setActive(false);
           });
@@ -61,7 +80,9 @@ export const QRScanModal: React.FC<QRScanModalProps> = ({
       }
     }
     return () => {
-      if (html5QrCode) html5QrCode.stop().catch(() => {});
+      if (html5QrCode) {
+        html5QrCode.stop().catch(() => {});
+      }
       setActive(false);
     };
     // eslint-disable-next-line

@@ -55,7 +55,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
       case 'manager': return 'bg-blue-500';
       case 'doctor': return 'bg-green-500';
       case 'technician': return 'bg-purple-500';
-      case 'helper': return 'bg-yellow-500';
+      case 'helper': return 'bg-emerald-500';
       case 'office': return 'bg-gray-500';
       default: return 'bg-gray-500';
     }

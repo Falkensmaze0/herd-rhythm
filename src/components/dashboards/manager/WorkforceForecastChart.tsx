@@ -35,7 +35,10 @@ export const WorkforceForecastChart: React.FC<WorkforceForecastChartProps> = ({
   return (
     <div className={`rounded-lg bg-background p-5 shadow ${className}`}>
       <div className="mb-3 flex items-center justify-between">
-        <span className="font-semibold text-lg">Workforce Forecast</span>
+        <span className="font-semibold text-lg">Medical Staff Forecast</span>
+        <div className="text-sm text-muted-foreground">
+          Based on scheduled medical procedures and protocols
+        </div>
       </div>
       <div className="h-64 relative">
         {hasData ? (

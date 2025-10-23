@@ -45,7 +45,7 @@ const QRScanModal: React.FC<QRScanModalProps> = ({ isOpen, onClose, onScanSucces
         if (!mounted) return;
         // Use global Html5Qrcode
         qrRef.current = new (window as any).Html5Qrcode('qr-reader');
-        await qrRef.current.start(
+        await qrRef.current?.start(
           { facingMode: 'environment' },
           {
             fps: 10,

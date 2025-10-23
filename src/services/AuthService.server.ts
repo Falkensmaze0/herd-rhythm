@@ -1,7 +1,6 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-
 import { AuthUser, Permission, UserRole, LoginCredentials, RegisterData, AuditLog, SystemLog } from '@/types';
+import { signToken, verifyToken } from '@/lib/jwt';
 import { MockAuthService } from './MockAuthService';
 
 // Dynamic import of prisma to handle cases where DB is not available
@@ -45,7 +44,7 @@ export class AuthService {
   static async createSession(userId: string, ipAddress?: string, userAgent?: string): Promise<string> {
     return this.withFallback(
       async () => {
-        const sessionToken = jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: '30d' });
+        const sessionToken = signToken({ userId }, { expiresIn: '30d' });
         
         await prisma.session.create({
           data: {
@@ -67,12 +66,9 @@ export class AuthService {
     return this.withFallback(
       async () => {
         try {
-          // First verify the JWT token
-          let decodedToken;
-          try {
-            decodedToken = jwt.verify(sessionToken, process.env.JWT_SECRET!) as { userId: string };
-          } catch (jwtError) {
-            console.error('JWT verification failed:', jwtError.message);
+          // Verify the JWT token
+          const decodedToken = verifyToken<{ userId: string }>(sessionToken);
+          if (!decodedToken) {
             return null;
           }
 
@@ -127,6 +123,11 @@ export class AuthService {
 
   // Authentication methods
   static async login(credentials: LoginCredentials, ipAddress?: string, userAgent?: string): Promise<{ user: AuthUser; sessionToken: string }> {
+    console.log('🔍 ===== LOGIN DEBUG =====');
+    console.log('🔍 USE_MOCK_AUTH:', process.env.USE_MOCK_AUTH);
+    console.log('🔍 Use Mock Service:', this.useMockService);
+    console.log('🔍 Prisma Available:', !!prisma);
+    console.log('🔍 Credentials:', { email: credentials.email, hasPassword: !!credentials.password });
     console.log('🔍 ===== LOGIN DEBUG =====');
     console.log('🔍 USE_MOCK_AUTH:', process.env.USE_MOCK_AUTH);
     console.log('🔍 Use Mock Service:', this.useMockService);
@@ -404,7 +405,7 @@ export class AuthService {
           return;
         }
 
-        const resetToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '1h' });
+        const resetToken = signToken({ userId: user.id }, { expiresIn: '1h' });
         
         await prisma.user.update({
           where: { id: user.id },
@@ -425,7 +426,8 @@ export class AuthService {
     return this.withFallback(
       async () => {
         try {
-          const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+          const decoded = verifyToken<{ userId: string }>(token);
+          if (!decoded) throw new Error('Invalid token');
           
           const user = await prisma.user.findFirst({
             where: {

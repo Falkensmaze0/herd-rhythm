@@ -6,15 +6,13 @@ import * as z from 'zod';
 import { AlertCircle, Eye, EyeOff, LayoutGrid, Loader2, Lock, Mail, Sparkles } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { getRoleDisplayName } from '@/config/roleConfig';
-import { LoginCredentials, UserRole } from '@/types';
+import { LoginCredentials } from '@/types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 const loginSchema = z.object({
@@ -27,42 +25,17 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 interface LoginFormProps {
-  selectedRole?: UserRole;
-  onRoleChange?: (role: UserRole) => void;
   onSuccess?: () => void;
   className?: string;
 }
 
-const ROLE_BADGE_STYLES: Record<UserRole, string> = {
-  admin: 'border border-rose-400/40 bg-rose-500/10 text-rose-50',
-  manager: 'border border-sky-400/40 bg-sky-500/10 text-sky-50',
-  doctor: 'border border-emerald-400/40 bg-emerald-500/10 text-emerald-50',
-  technician: 'border border-violet-400/40 bg-violet-500/10 text-violet-50',
-  helper: 'border border-amber-400/40 bg-amber-500/10 text-amber-950',
-  office: 'border border-slate-400/40 bg-slate-500/10 text-slate-100',
-};
-
-const ROLE_NARRATIVE: Record<UserRole, string> = {
-  admin: 'Steward the entire Herd Rhythm infrastructure with full-spectrum control.',
-  manager: 'Coordinate workforce, logistics, and daily production signals.',
-  doctor: 'Lead veterinary operations with precision diagnostics and rounds planning.',
-  technician: 'Execute synchronization protocols with timing perfection and equipment readiness.',
-  helper: 'Stay aligned on feeding, cleaning, and stall maintenance priorities.',
-  office: 'Drive communications, appointments, and documentation governance.',
-};
-
-export const LoginForm: React.FC<LoginFormProps> = ({
-  selectedRole,
-  onRoleChange,
-  onSuccess,
-  className,
-}) => {
-  const [currentRole, setCurrentRole] = useState<UserRole>(selectedRole || 'technician');
+export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, className, }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [requireTwoFactor, setRequireTwoFactor] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  
-  const { login, isLoading } = useAuth();
+
+  // Use auth context loading state to avoid local/prop collisions
+  const { login, isLoading: authIsLoading } = useAuth();
   
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -73,13 +46,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       twoFactorCode: '',
     },
   });
-
-  const handleRoleSelect = (role: UserRole) => {
-    setCurrentRole(role);
-    onRoleChange?.(role);
-    setLoginError(null);
-    form.reset();
-  };
 
   const onSubmit = async (data: LoginFormData) => {
     try {
@@ -92,8 +58,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       };
 
       await login(payload);
-      onSuccess?.();
-    } catch (error: any) {
+      // Don't call onSuccess since we're doing direct navigation
+    } catch (err: unknown) {
+      const error = err as Error;
       if (error.message === 'Two-factor authentication required') {
         setRequireTwoFactor(true);
       } else {
@@ -102,39 +69,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     }
   };
 
-  const RoleSelector = () => (
-    <Tabs
-      value={currentRole}
-      onValueChange={(value) => handleRoleSelect(value as UserRole)}
-      className="space-y-3"
-    >
-      <TabsList className="grid w-full grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-1 text-xs">
-        <TabsTrigger
-          value="admin"
-          className="rounded-xl border border-transparent px-3 py-2 uppercase tracking-[0.24em] text-[0.7rem] text-slate-300 transition hover:border-white/20 hover:bg-white/10 data-[state=active]:border-white/30 data-[state=active]:bg-white/15 data-[state=active]:text-white"
-        >
-          Admin
-        </TabsTrigger>
-        <TabsTrigger value="manager" className="rounded-xl border border-transparent px-3 py-2 uppercase tracking-[0.24em] text-[0.7rem] text-slate-300 transition hover:border-white/20 hover:bg-white/10 data-[state=active]:border-white/30 data-[state=active]:bg-white/15 data-[state=active]:text-white">
-          Manager
-        </TabsTrigger>
-        <TabsTrigger value="doctor" className="rounded-xl border border-transparent px-3 py-2 uppercase tracking-[0.24em] text-[0.7rem] text-slate-300 transition hover:border-white/20 hover:bg-white/10 data-[state=active]:border-white/30 data-[state=active]:bg-white/15 data-[state=active]:text-white">
-          Doctor
-        </TabsTrigger>
-      </TabsList>
-      <TabsList className="grid w-full grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-1 text-xs">
-        <TabsTrigger value="technician" className="rounded-xl border border-transparent px-3 py-2 uppercase tracking-[0.24em] text-[0.7rem] text-slate-300 transition hover:border-white/20 hover:bg-white/10 data-[state=active]:border-white/30 data-[state=active]:bg-white/15 data-[state=active]:text-white">
-          Technician
-        </TabsTrigger>
-        <TabsTrigger value="helper" className="rounded-xl border border-transparent px-3 py-2 uppercase tracking-[0.24em] text-[0.7rem] text-slate-300 transition hover:border-white/20 hover:bg-white/10 data-[state=active]:border-white/30 data-[state=active]:bg-white/15 data-[state=active]:text-white">
-          Helper
-        </TabsTrigger>
-        <TabsTrigger value="office" className="rounded-xl border border-transparent px-3 py-2 uppercase tracking-[0.24em] text-[0.7rem] text-slate-300 transition hover:border-white/20 hover:bg-white/10 data-[state=active]:border-white/30 data-[state=active]:bg-white/15 data-[state=active]:text-white">
-          Office
-        </TabsTrigger>
-      </TabsList>
-    </Tabs>
-  );
+
 
   return (
     <div className={cn('w-full', className)}>
@@ -156,20 +91,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           </div>
         </header>
 
-        <div className="space-y-6">
-          <RoleSelector />
-
-          <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.05] p-4 text-left">
-            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-slate-400">
-              <Sparkles className="h-4 w-4" /> Role context
-            </div>
-            <div className="space-y-2">
-              <Badge className={cn('rounded-full px-3 py-1 text-[0.6rem] uppercase tracking-[0.28em]', ROLE_BADGE_STYLES[currentRole])}>
-                {getRoleDisplayName(currentRole)}
-              </Badge>
-              <p className="text-sm text-slate-300/80">{ROLE_NARRATIVE[currentRole]}</p>
-            </div>
-          </div>
+        <div className="space-y-4">
+          {/* Roles and user registration are managed in the Admin panel. Login accepts email + password only. */}
+          <Alert className="border border-slate-400/40 bg-white/[0.02] text-slate-200">
+            <span className="text-sm">Tip: Admin user management (roles/registrations) is available in the Admin panel.</span>
+          </Alert>
         </div>
 
         {loginError && (
@@ -195,9 +121,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                       <Input
                         {...field}
                         type="email"
-                        placeholder={`your.${currentRole}@herdrhythm.io`}
+                        placeholder={`you@herdrhythm.io`}
                         className="h-12 rounded-2xl border border-white/15 bg-white/[0.08] pl-11 text-slate-100 placeholder:text-slate-500 focus:border-emerald-400 focus:ring-emerald-400"
-                        disabled={isLoading}
+                        disabled={authIsLoading}
                       />
                     </div>
                   </FormControl>
@@ -222,14 +148,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                         type={showPassword ? 'text' : 'password'}
                         placeholder="••••••••"
                         className="h-12 rounded-2xl border border-white/15 bg-white/[0.08] pl-11 pr-12 text-slate-100 placeholder:text-slate-500 focus:border-emerald-400 focus:ring-emerald-400"
-                        disabled={isLoading}
+                        disabled={authIsLoading}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword((prev) => !prev)}
                         className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-200"
                         aria-label={showPassword ? 'Hide password' : 'Show password'}
-                        disabled={isLoading}
+                        disabled={authIsLoading}
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -256,7 +182,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                         maxLength={6}
                         placeholder="000000"
                         className="h-12 rounded-2xl border border-white/15 bg-white/[0.08] text-center font-semibold tracking-[0.4em] text-slate-100 placeholder:text-slate-500 focus:border-emerald-400 focus:ring-emerald-400"
-                        disabled={isLoading}
+                        disabled={authIsLoading}
                       />
                     </FormControl>
                     <FormMessage className="text-rose-300" />
@@ -275,7 +201,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                       checked={field.value}
                       onCheckedChange={field.onChange}
                       className="border-white/40 data-[state=checked]:border-emerald-400 data-[state=checked]:bg-emerald-500"
-                      disabled={isLoading}
+                      disabled={authIsLoading}
                     />
                   </FormControl>
                   <FormLabel className="text-xs uppercase tracking-[0.24em] text-slate-400">
@@ -288,14 +214,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             <Button
               type="submit"
               className="h-12 w-full rounded-full border border-emerald-300/50 bg-emerald-500/80 text-sm font-semibold uppercase tracking-[0.28em] text-white transition hover:bg-emerald-400"
-              disabled={isLoading}
+              disabled={authIsLoading}
             >
-              {isLoading ? (
+              {authIsLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in…
                 </>
               ) : (
-                `Enter as ${getRoleDisplayName(currentRole)}`
+                `Sign in`
               )}
             </Button>
           </form>

@@ -1,52 +1,59 @@
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    instrumentationHook: true,
+  },
   reactStrictMode: true,
   env: {
     USE_MOCK_AUTH: process.env.USE_MOCK_AUTH,
     JWT_SECRET: process.env.JWT_SECRET,
   },
-  webpack: (config, { isServer, webpack }) => {
-    // Polyfill Buffer for client-side
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      // Use string polyfills, not import.meta.resolve
-      crypto: 'crypto-browserify',
-      buffer: 'buffer/',
-    };
-
-    // Ensure Buffer is available globally
-    config.plugins = [
-      ...config.plugins,
-      new webpack.ProvidePlugin({
-        Buffer: ['buffer', 'Buffer'],
-      }),
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: process.env.NODE_ENV === 'development' 
+              ? [
+                  "default-src 'self'",
+                  "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval'",
+                  "style-src 'self' 'unsafe-inline'",
+                  "img-src 'self' data: blob:",
+                  "font-src 'self'",
+                  "connect-src 'self' ws: wss: http: https:",
+                  "frame-src 'self'",
+                  "worker-src 'self' blob:",
+                ].join('; ')
+              : [
+                  "default-src 'self'",
+                  "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+                  "style-src 'self' 'unsafe-inline'",
+                  "img-src 'self' data: blob:",
+                  "font-src 'self'",
+                  "connect-src 'self'",
+                  "frame-src 'self'",
+                ].join('; '),
+          },
+        ],
+      },
     ];
-
-    if (!isServer) {
-      // For client-side, externalize 'jsonwebtoken' as it's a Node.js module
-      config.externals = {
-        ...config.externals,
-        'jsonwebtoken': 'commonjs jsonwebtoken',
+  },
+  webpack: (config, { dev, isServer }) => {
+    if (!isServer && dev) {
+      config.optimization = {
+        ...config.optimization,
+        runtimeChunk: 'single',
+        splitChunks: {
+          chunks: 'all',
+        },
       };
-      
-      // Ignore these node-specific modules in the browser
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        crypto: false,
-        stream: false,
-        util: false,
-        buffer: false,
-      };
+      // Add source maps for development
+      config.devtool = 'source-map';
     }
     return config;
   },
 }
 
 export default nextConfig;
-

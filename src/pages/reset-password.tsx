@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
-import { CheckCircle2, KeyRound, Shield } from 'lucide-react';
 
+import React, { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { CheckCircle2, KeyRound, Shield } from 'lucide-react';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { GetServerSideProps } from 'next';
 
 const PASSWORD_GUARDRAILS = [
   'Minimum of 8 characters',
@@ -17,14 +17,16 @@ const PASSWORD_GUARDRAILS = [
   'Incorporate a special symbol to strengthen security',
 ];
 
-export default function ResetPasswordPage() {
+interface ResetPasswordProps {
+  token?: string;
+}
+
+const ResetPasswordPage: React.FC<ResetPasswordProps> = ({ token }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const router = useRouter();
-  const { token } = router.query;
 
   const guardrailChecks = useMemo(() => {
     return PASSWORD_GUARDRAILS.map((rule) => ({
@@ -56,13 +58,20 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      await fetch('/api/auth/reset/confirm', {
+      const res = await fetch('/api/auth/reset/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword: password }),
       });
-      setMessage('Password reset successfully! Redirecting to login…');
-      setTimeout(() => router.push('/login'), 2000);
+      if (res.ok) {
+        setMessage('Password reset successfully! Redirecting to login…');
+        setTimeout(() => {
+          window.location.replace('/login');
+        }, 2000);
+      } else {
+        const data = await res.json();
+        setError(data.error || 'An error occurred. Please try again.');
+      }
     } catch (err: any) {
       setError(err.message || 'An error occurred. Please try again.');
     } finally {
@@ -70,11 +79,12 @@ export default function ResetPasswordPage() {
     }
   };
 
-  useEffect(() => {
-    if (!token) {
-      router.push('/login');
+  if (!token) {
+    if (typeof window !== 'undefined') {
+      window.location.replace('/login');
     }
-  }, [token, router]);
+    return null;
+  }
 
   return (
     <AuthLayout
@@ -186,14 +196,15 @@ export default function ResetPasswordPage() {
                 >
                   {isLoading ? 'Applying new credentials…' : 'Reset password'}
                 </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-12 w-full rounded-full border border-white/10 bg-white/[0.05] text-slate-200 transition hover:border-white/20 hover:bg-white/10"
-                  onClick={() => router.push('/login')}
-                >
-                  Return to login
-                </Button>
+                <Link href="/login" passHref legacyBehavior>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-12 w-full rounded-full border border-white/10 bg-white/[0.05] text-slate-200 transition hover:border-white/20 hover:bg-white/10"
+                  >
+                    Return to login
+                  </Button>
+                </Link>
               </div>
             </form>
           </CardContent>
@@ -205,4 +216,27 @@ export default function ResetPasswordPage() {
       </div>
     </AuthLayout>
   );
-}
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const { query } = context;
+  const token = typeof query.token === 'string' ? query.token : undefined;
+
+  // If no token, redirect to login
+  if (!token) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+
+  return {
+    props: {
+      token,
+    },
+  };
+};
+
+export default ResetPasswordPage;

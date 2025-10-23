@@ -1,21 +1,25 @@
-import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
-import { Mail, ShieldCheck } from 'lucide-react';
 
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { Mail, ShieldCheck } from 'lucide-react';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { GetServerSideProps } from 'next';
 
-export default function ForgotPasswordPage() {
+interface ForgotPasswordProps {
+  message?: string;
+  error?: string;
+}
+
+const ForgotPasswordPage: React.FC<ForgotPasswordProps> = ({ message: initialMessage, error: initialError }) => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const router = useRouter();
+  const [message, setMessage] = useState(initialMessage || '');
+  const [error, setError] = useState(initialError || '');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,12 +28,17 @@ export default function ForgotPasswordPage() {
     setMessage('');
 
     try {
-      await fetch('/api/auth/reset', {
+      const res = await fetch('/api/auth/reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-      setMessage('If an account with that email exists, a password reset link has been sent.');
+      if (res.ok) {
+        setMessage('If an account with that email exists, a password reset link has been sent.');
+      } else {
+        const data = await res.json();
+        setError(data.error || 'An error occurred. Please try again.');
+      }
     } catch (err: any) {
       setError(err.message || 'An error occurred. Please try again.');
     } finally {
@@ -118,14 +127,15 @@ export default function ForgotPasswordPage() {
                 >
                   {isLoading ? 'Dispatching reset link…' : 'Send reset link'}
                 </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-12 w-full rounded-full border border-white/10 bg-white/[0.05] text-slate-200 transition hover:border-white/20 hover:bg-white/10"
-                  onClick={() => router.push('/login')}
-                >
-                  Back to login
-                </Button>
+                <Link href="/login" passHref legacyBehavior>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-12 w-full rounded-full border border-white/10 bg-white/[0.05] text-slate-200 transition hover:border-white/20 hover:bg-white/10"
+                  >
+                    Back to login
+                  </Button>
+                </Link>
               </div>
             </form>
           </CardContent>
@@ -137,4 +147,13 @@ export default function ForgotPasswordPage() {
       </div>
     </AuthLayout>
   );
-}
+};
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  // You can add server-side logic here if needed (e.g., check for messages/errors in query)
+  return {
+    props: {},
+  };
+};
+
+export default ForgotPasswordPage;

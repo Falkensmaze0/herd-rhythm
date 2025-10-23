@@ -14,19 +14,17 @@ export interface Reminder {
   id: string;
   cowId: string;
   title: string;
-  description: string;
+  description: string | null;
   dueDate: string;
   completed: boolean;
   priority: 'low' | 'medium' | 'high';
   type: 'injection' | 'checkup' | 'ai' | 'custom' | 'medication' | 'vaccination' | 'pregnancy_check' | 'breeding' | 'feeding' | 'maintenance';
-  syncMethodId?: string;
-  syncStepId?: string;
-  estimatedCowCount?: number;
-  workforceSnapshot?: {
-    workers?: number;
-    technicians?: number;
-    doctors?: number;
-  };
+  syncMethodId: string | null;
+  syncStepId: string | null;
+  estimatedCowCount: number | null;
+  workforceSnapshot: any | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface SyncMethod {

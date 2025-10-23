@@ -56,21 +56,58 @@ const mock: ManagerAnalytics = {
   ]
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+import { withManagerAuth } from '@/middleware/withAuth';
+import { WorkforceService } from '@/services/WorkforceService';
+
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ success: false, message: 'Method not allowed' })
   }
+
   try {
-    const sessionToken = req.cookies.sessionToken || req.headers.authorization?.replace('Bearer ', '');
-    const user = sessionToken ? await AuthService.validateSession(sessionToken) : null;
-    if (!user || user.role !== 'manager') {
-      return res.status(403).json({ success: false, message: 'Manager access only' });
+    const window = req.query.window as string || '1w';
+    let forecastDays = 14; // Default forecast window
+
+    switch(window) {
+      case '5m': case '30m': case '1h': case '6h': forecastDays = 1; break;
+      case '1d': forecastDays = 2; break;
+      case '1w': forecastDays = 7; break;
+      case '30d': forecastDays = 30; break;
+      case '90d': forecastDays = 90; break;
+      case '1y': forecastDays = 365; break;
     }
-    // Real app: replace mock with SQL aggregates (+ ML endpoint when model ready)
-    return res.status(200).json({ success: true, data: mock, timestamp: new Date().toISOString() })
+
+    // Generate dates for the forecast
+    const dates = Array.from({ length: forecastDays }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() + i);
+      return date.toISOString().split('T')[0];
+    });
+
+    // Generate workforce forecast using the WorkforceService
+    const forecast = await WorkforceService.getForecastForNextDays(forecastDays);
+    const workforceForecast = forecast.map(f => ({
+      date: f.date.toISOString().split('T')[0],
+      workers: f.workers,
+      technicians: f.technicians,
+      doctors: f.doctors
+    }));
+
+    const analyticsData = {
+      ...mock,
+      workforceForecast,
+    };
+
+    return res.status(200).json({ 
+      success: true, 
+      data: analyticsData, 
+      timestamp: new Date().toISOString() 
+    });
+
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error('Manager analytics err:', err);
     return res.status(500).json({ success: false, message: 'Failed to fetch analytics' });
   }
 }
+
+export default withManagerAuth(handler);

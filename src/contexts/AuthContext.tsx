@@ -1,6 +1,7 @@
+'use client';
+
 /**
- * AuthContext: Client authentication/session logic. Production-Optimized.
- * All authentication, session, registration, password ops POST to API routes only.
+ * AuthContext provides authentication state and methods for entire app
  * No direct AuthService/server logic is ever invoked here.
  * Role-based redirects are managed centrally in this provider after login/session change.
  */
@@ -8,7 +9,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { AuthUser, LoginCredentials, RegisterData, UserRole } from '@/types';
 import { AuthService } from '@/services/AuthService';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/router';
+import Router from 'next/router';
 
 
 interface AuthContextType {
@@ -49,18 +50,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     office: '/office',
   };
 
-  // Handles role-based redirects after login/session validation
-  // Assumes next/router for navigation
-  const router = useRouter();
-  useEffect(() => {
-    if (user && user.role) {
-      const path = ROLE_HOME_ROUTE[user.role];
-      if (path && router.pathname !== path) {
-        router.push(path);
+  // Handle role-based navigation consistently
+  const navigateToUserHome = async (userRole: UserRole): Promise<void> => {
+    if (typeof window === 'undefined') return; // avoid server-side navigation
+    const path = ROLE_HOME_ROUTE[userRole];
+    if (path) {
+      try {
+        await Router.replace(path);
+      } catch (error) {
+        // Fallback to window.location on navigation error
+        window.location.href = path;
       }
     }
-    // Only depends on user, not router
-  }, [user]);
+  };
 
   // Initialize authentication state on app load
   useEffect(() => {
@@ -98,10 +100,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // If not valid, cleanup session
       localStorage.removeItem('sessionToken');
       removeCookie('sessionToken');
+      setUser(null);
     } catch (error) {
       console.error('Authentication initialization failed:', error);
       localStorage.removeItem('sessionToken');
       removeCookie('sessionToken');
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -126,21 +130,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const { user: authUser, sessionToken } = data;
-      setUser(authUser);
-
+      
       // Store session token for persistence
-      localStorage.setItem('sessionToken', sessionToken);
-      if (credentials.rememberMe) {
-        setCookie('sessionToken', sessionToken, 30); // 30 days
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('sessionToken', sessionToken);
+        if (credentials.rememberMe) {
+          setCookie('sessionToken', sessionToken, 30); // 30 days
+        }
       }
-
+      
+      // Set user state
+      setUser(authUser);
+      
+      // Show single success toast
       toast({
         title: 'Login Successful',
         description: `Welcome back, ${authUser.name}!`,
-        variant: 'default',
+        variant: 'success',
       });
+      
+      // Ensure state updates are complete before navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Navigate to role-specific route
+      const path = ROLE_HOME_ROUTE[authUser.role];
+      if (path) {
+        window.location.href = path;
+      }
     } catch (error: any) {
       console.error('Login failed:', error);
+      setIsLoading(false);
       
       // Handle specific error types
       if (error.message === 'Two-factor authentication required') {
@@ -153,8 +172,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         variant: 'destructive',
       });
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -179,9 +196,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.',
-        variant: 'default',
+        variant: 'success',
       });
-      router.push('/login'); // Redirect after logout
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
     }
   };
 
@@ -201,7 +220,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       toast({
         title: 'Registration Successful',
         description: 'Your account has been created. You can now log in.',
-        variant: 'default',
+        variant: 'success',
       });
     } catch (error: any) {
       console.error('Registration failed:', error);
@@ -232,7 +251,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       toast({
         title: 'Password Reset Sent',
         description: 'If an account exists with that email, you will receive reset instructions.',
-        variant: 'default',
+        variant: 'success',
       });
     } catch (error: any) {
       console.error('Password reset failed:', error);

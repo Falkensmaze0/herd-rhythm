@@ -85,10 +85,12 @@ export const serializeReminder = (reminder: ReminderWithRelations): Reminder => 
   completed: reminder.completed,
   priority: reminder.priority,
   type: reminder.type,
-  syncMethodId: reminder.syncMethodId ?? undefined,
-  syncStepId: reminder.syncStepId ?? undefined,
-  estimatedCowCount: reminder.estimatedCowCount ?? undefined,
+  syncMethodId: reminder.syncMethodId,
+  syncStepId: reminder.syncStepId,
+  estimatedCowCount: reminder.estimatedCowCount,
   workforceSnapshot: parseWorkforceSnapshot(reminder.workforceSnapshot),
+  createdAt: reminder.createdAt,
+  updatedAt: reminder.updatedAt,
 });
 
 export const serializeCow = (cow: CowWithRelations): Cow => ({

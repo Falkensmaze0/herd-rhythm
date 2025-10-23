@@ -27,29 +27,47 @@ const CowList: React.FC<CowListProps> = ({
   showControls = true,
   containerClassName = "vet-card"
 }) => {
-  const [selectedCow, setSelectedCow] = useState<Cow | null>(null);
+  const [selectedCows, setSelectedCows] = useState<string[]>([]);
+  const [previewCowId, setPreviewCowId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'pregnant': return 'bg-blue-100 text-blue-800';
-      case 'sick': return 'bg-red-100 text-red-800';
-      case 'retired': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'active': return 'bg-accent text-primary';
+      case 'pregnant': return 'bg-blue-50 text-blue-800';
+      case 'sick': return 'bg-red-50 text-red-800';
+      case 'retired': return 'bg-muted text-muted-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
 
+  // Add cow to selection (QR scan or click)
+  const handleAddToSelection = (cowId: string) => {
+    setSelectedCows(prev => prev.includes(cowId) ? prev : [...prev, cowId]);
+  };
+  // Remove cow from selection (swipe left or unselect icon)
+  const handleRemoveFromSelection = (cowId: string) => {
+    setSelectedCows(prev => prev.filter(id => id !== cowId));
+  };
+
+  // QR scan adds to selection
   const handleQRScanSuccess = (cowId: string) => {
     const cow = cows.find(c => c.id === cowId);
     if (cow) {
-      setSelectedCow(cow);
+      handleAddToSelection(cowId);
     } else {
-      // You might want to show an error message here
       console.error('Cow not found with ID:', cowId);
     }
   };
+
+  // Preview toggle
+  const togglePreview = (cowId: string) => {
+    setPreviewCowId(prev => prev === cowId ? null : cowId);
+  };
+
+  // Gesture support for swipe left (mobile)
+  // For brevity, not implemented here, but can use a library like react-swipeable
 
   const filteredCows = useMemo(() => {
     if (!searchQuery) return cows;
@@ -65,8 +83,8 @@ const CowList: React.FC<CowListProps> = ({
     <div className={containerClassName}>
       {showControls && (
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Cow Management</h2>
-          <button onClick={onAddCow} className="vet-button-primary">
+          <h2 className="text-2xl font-bold text-primary">Cow Management</h2>
+          <button onClick={onAddCow} className="bg-primary text-white px-4 py-2 rounded shadow hover:bg-primary/90 transition">
             Add New Cow
           </button>
         </div>
@@ -75,7 +93,7 @@ const CowList: React.FC<CowListProps> = ({
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => setIsQRModalOpen(true)}
-          className="vet-button-secondary p-2 flex items-center justify-center"
+          className="bg-muted text-muted-foreground p-2 flex items-center justify-center rounded hover:bg-accent transition"
           aria-label="Scan QR Code"
         >
           <QrCode size={20} />
@@ -87,7 +105,7 @@ const CowList: React.FC<CowListProps> = ({
             placeholder="Search cows by name, ID, or breed..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
       </div>
@@ -99,61 +117,88 @@ const CowList: React.FC<CowListProps> = ({
       />
       
       <div className="grid gap-4 overflow-y-auto max-h-[60vh]">
-        {filteredCows.map((cow) => (
-          <div
-            key={cow.id}
-            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => setSelectedCow(cow)}
-          >
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900">{cow.name}</h3>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(cow.status)}`}>
-                    {cow.status}
-                  </span>
+        {filteredCows.map((cow) => {
+          const isSelected = selectedCows.includes(cow.id);
+          const isPreviewing = previewCowId === cow.id;
+          return (
+            <div
+              key={cow.id}
+              className={`border border-input rounded-lg p-4 bg-background transition-shadow cursor-pointer relative ${isSelected ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md'} `}
+              onClick={() => handleAddToSelection(cow.id)}
+              onDoubleClick={() => togglePreview(cow.id)}
+              // For mobile, long tap can be handled with a gesture library
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <h3 className="text-lg font-semibold text-primary">{cow.name}</h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(cow.status)}`}>
+                      {cow.status}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                    <div>
+                      <span className="font-medium">Breed:</span> {cow.breed}
+                    </div>
+                    <div>
+                      <span className="font-medium">Age:</span> {cow.age} years
+                    </div>
+                    <div>
+                      <span className="font-medium">Last Sync:</span> {format(new Date(cow.lastSyncDate), 'MMM dd, yyyy')}
+                    </div>
+                    <div>
+                      <span className="font-medium">ID:</span> #{cow.id}
+                    </div>
+                  </div>
+                  {cow.healthNotes && (
+                    <p className="text-sm text-muted-foreground mt-2 bg-muted p-2 rounded">
+                      <span className="font-medium">Notes:</span> {cow.healthNotes}
+                    </p>
+                  )}
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                  <div>
-                    <span className="font-medium">Breed:</span> {cow.breed}
+                <div className="flex flex-col items-end gap-2">
+                  <div className="text-sm text-muted-foreground">
+                    {cow.reminders.length} active reminders
                   </div>
-                  <div>
-                    <span className="font-medium">Age:</span> {cow.age} years
-                  </div>
-                  <div>
-                    <span className="font-medium">Last Sync:</span> {format(new Date(cow.lastSyncDate), 'MMM dd, yyyy')}
-                  </div>
-                  <div>
-                    <span className="font-medium">ID:</span> #{cow.id}
-                  </div>
+                  <button
+                    className="rounded-full p-1 bg-muted hover:bg-accent transition"
+                    onClick={e => { e.stopPropagation(); togglePreview(cow.id); }}
+                    aria-label={isPreviewing ? 'Hide details' : 'Show details'}
+                  >
+                    <span className={`transition-transform duration-200 ${isPreviewing ? 'rotate-180' : ''}`}>{isPreviewing ? '▲' : '▼'}</span>
+                  </button>
+                  {isSelected && (
+                    <button
+                      className="rounded-full p-1 bg-red-100 text-red-700 hover:bg-red-200 transition"
+                      onClick={e => { e.stopPropagation(); handleRemoveFromSelection(cow.id); }}
+                      aria-label="Unselect cow"
+                    >
+                      Unselect
+                    </button>
+                  )}
                 </div>
-                {cow.healthNotes && (
-                  <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">
-                    <span className="font-medium">Notes:</span> {cow.healthNotes}
-                  </p>
+              </div>
+              {/* Animated preview section */}
+              <div
+                className={`overflow-hidden transition-all duration-300 ${isPreviewing ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
+                style={{ background: '#f9fafb', borderRadius: 8, marginTop: 8, padding: isPreviewing ? 16 : 0 }}
+              >
+                {isPreviewing && (
+                  <div>
+                    <div className="font-semibold mb-2">Cow Details</div>
+                    <div className="text-sm mb-1">Breed: {cow.breed}</div>
+                    <div className="text-sm mb-1">Age: {cow.age}</div>
+                    <div className="text-sm mb-1">Last Sync: {format(new Date(cow.lastSyncDate), 'MMM dd, yyyy')}</div>
+                    <div className="text-sm mb-1">Status: {cow.status}</div>
+                    <div className="text-sm mb-1">Health Notes: {cow.healthNotes || 'None'}</div>
+                    {/* Add more protocol-relevant details here */}
+                  </div>
                 )}
               </div>
-              <div className="text-right">
-                <div className="text-sm text-gray-500">
-                  {cow.reminders.length} active reminders
-                </div>
-              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-
-      {selectedCow && (
-        <CowProfileModal
-          cow={selectedCow}
-          isOpen={!!selectedCow}
-          onClose={() => setSelectedCow(null)}
-          onSelectForProtocol={() => {
-            onSelectCow(selectedCow);
-            setSelectedCow(null);
-          }}
-        />
-      )}
     </div>
   );
 };

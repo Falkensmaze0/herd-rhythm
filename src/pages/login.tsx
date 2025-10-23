@@ -1,16 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
 import { Info, LayoutDashboard, Shield, Sparkles, Users } from 'lucide-react';
 
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { LoginForm } from '@/components/auth/LoginForm';
-import { useAuth } from '@/contexts/AuthContext';
 import { getRoleDisplayName } from '@/config/roleConfig';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { UserRole } from '@/types';
+import { GetServerSideProps } from 'next';
 
 const ROLE_INSIGHTS: Array<{
   role: UserRole;
@@ -56,27 +55,16 @@ const ROLE_INSIGHTS: Array<{
   },
 ];
 
-const LoginPage: React.FC = () => {
-  const router = useRouter();
-  const { isAuthenticated, isLoading } = useAuth();
-  const [selectedRole, setSelectedRole] = useState<UserRole>('technician');
 
-  useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      const returnUrl = (router.query.returnUrl as string) || '/';
-      router.push(returnUrl);
-    }
-  }, [isAuthenticated, isLoading, router]);
+interface LoginPageProps {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  returnUrl?: string;
+}
 
-  const handleLoginSuccess = () => {
-    const returnUrl = (router.query.returnUrl as string) || '/';
-    router.push(returnUrl);
-  };
-
-  const highlightedRole = useMemo(
-    () => ROLE_INSIGHTS.find((item) => item.role === selectedRole),
-    [selectedRole],
-  );
+const LoginPage: React.FC<LoginPageProps> = ({ isAuthenticated, isLoading, returnUrl }) => {
+  // Login no longer requires selecting a role. Roles are assigned via Admin panel.
+  const highlightedRole = ROLE_INSIGHTS[1];
 
   if (isLoading) {
     return (
@@ -90,6 +78,11 @@ const LoginPage: React.FC = () => {
   }
 
   if (isAuthenticated) {
+    if (returnUrl) {
+      if (typeof window !== 'undefined') {
+        window.location.replace(returnUrl);
+      }
+    }
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950">
         <p className="text-sm font-medium tracking-[0.3em] text-slate-400 uppercase">
@@ -176,11 +169,7 @@ const LoginPage: React.FC = () => {
               </span>
             </div>
 
-            <LoginForm
-              selectedRole={selectedRole}
-              onRoleChange={setSelectedRole}
-              onSuccess={handleLoginSuccess}
-            />
+            <LoginForm />
           </CardContent>
         </Card>
 
@@ -201,6 +190,45 @@ const LoginPage: React.FC = () => {
       </div>
     </AuthLayout>
   );
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const { req, query } = context;
+  const sessionToken = context.req.cookies.sessionToken;
+  let returnUrl = query.returnUrl ? String(query.returnUrl) : '/';
+
+  if (sessionToken) {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/session`, {
+        method: 'GET',
+        headers: {
+          'Cookie': `sessionToken=${sessionToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.user) {
+          return {
+            redirect: {
+              destination: returnUrl,
+              permanent: false,
+            },
+          };
+        }
+      }
+    } catch (error) {
+      console.error('Session validation error:', error);
+    }
+  }
+
+  return {
+    props: {
+      isAuthenticated: false,
+      isLoading: false,
+      returnUrl,
+    },
+  };
 };
 
 export default LoginPage;

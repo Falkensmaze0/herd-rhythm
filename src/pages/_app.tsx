@@ -15,9 +15,7 @@ interface ThemeContextValue {
   toggleTheme: () => void;
 }
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
-export function useTheme() {
-  return useContext(ThemeContext);
-}
+// Moved useTheme to ThemeContext.ts for fast refresh compatibility
 
 // ThemeProvider logic:
 function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -37,15 +35,13 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
   
   // Apply theme to html tag
   useEffect(() => {
-    if (typeof document !== "undefined") {
-      const html = document.documentElement;
-      if (theme === "dark") {
-        html.classList.add("dark");
-      } else {
-        html.classList.remove("dark");
-      }
-      localStorage.setItem("theme", theme);
+    const html = document.documentElement;
+    if (theme === "dark") {
+      html.classList.add("dark");
+    } else {
+      html.classList.remove("dark");
     }
+    localStorage.setItem("theme", theme);
   }, [theme]);
 
   const toggleTheme = React.useCallback(() => {
@@ -80,13 +76,23 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
 }
 
 function App({ Component, pageProps }: AppProps) {
+  const [mounted, setMounted] = React.useState(false);
+
+  // Hydration fix
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
         staleTime: 5 * 60 * 1000, // 5 minutes
-        retry: (failureCount, error: any) => {
-          if (error?.status === 401 || error?.status === 403) {
-            return false;
+        retry: (failureCount: number, error: unknown) => {
+          if (typeof error === 'object' && error !== null && 'status' in error) {
+            const status = (error as { status?: number }).status;
+            if (status === 401 || status === 403) {
+              return false;
+            }
           }
           return failureCount < 3;
         }
@@ -94,12 +100,38 @@ function App({ Component, pageProps }: AppProps) {
     }
   }));
 
+  // Check if this is a special page that needs minimal wrapping
+  const errorPages = ["404", "500", "_error"];
+  const isErrorPage = errorPages.includes(
+    (Component as any).displayName || 
+    Component.name || 
+    ""
+  );
+
+  // Wrap error pages with minimal context
+  if (isErrorPage) {
+    return (
+      <div id="__next">
+        <Component {...pageProps} />
+      </div>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
           <TooltipProvider>
-            <Component {...pageProps} />
+            <div suppressHydrationWarning>
+              {!mounted ? (
+                // Show a loading state that matches your app's design
+                <div className="min-h-screen bg-background flex items-center justify-center">
+                  <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+                </div>
+              ) : (
+                <Component {...pageProps} />
+              )}
+            </div>
             <Toaster />
             <Sonner />
           </TooltipProvider>

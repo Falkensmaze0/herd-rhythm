@@ -46,10 +46,10 @@ const WorkforceForecast: React.FC<WorkforceForecastProps> = ({ reminders, cows, 
               {entry.name}: {entry.value} personnel
             </p>
           ))}
-          {dayData && dayData.taskBreakdown.length > 0 && (
+          {dayData?.taskBreakdown && dayData.taskBreakdown.length > 0 && (
             <div className="mt-2 pt-2 border-t border-gray-100">
               <p className="text-xs text-gray-600 font-medium mb-1">Tasks:</p>
-              {dayData.taskBreakdown.map((task, idx) => (
+              {dayData?.taskBreakdown?.map((task, idx) => (
                 <p key={idx} className="text-xs text-gray-500">
                   {task.task}: {task.cowCount} cows
                 </p>
@@ -161,7 +161,7 @@ const WorkforceForecast: React.FC<WorkforceForecastProps> = ({ reminders, cows, 
                   <p className="text-sm text-gray-600">Doctors</p>
                 </div>
               </div>
-              {selectedDay.taskBreakdown.length > 0 && (
+               {selectedDay?.taskBreakdown && selectedDay.taskBreakdown.length > 0 && (
                 <div>
                   <p className="font-medium text-gray-700 mb-2">Scheduled Tasks:</p>
                   <div className="space-y-2">

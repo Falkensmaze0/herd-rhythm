@@ -45,17 +45,22 @@ export const NeonPromptInput: React.FC<NeonPromptInputProps> = ({
     <form
       className={cn(
         'fixed',
-        'bottom-3 left-2 right-2', // Tighter margins
-        'z-40',
+        'bottom-4 z-40',
+        // center horizontally and keep responsive margins
+        'left-1/2 -translate-x-1/2',
         'bg-background bg-opacity-90',
         'p-2 flex gap-2 items-center',
         'backdrop-blur-xl',
-        // Removed 'border-primary' and explicit yellow-like shadows!
         'border-2',
-        'shadow-[0_0_16px_2px_rgba(16,185,129,0.7),0_0_3px_2px_rgba(56,189,248,0.4)]',
+        // gentle cyan/teal neon glow (no yellow)
+        'shadow-[0_0_16px_2px_rgba(16,185,129,0.6),0_0_6px_3px_rgba(56,189,248,0.18)]',
       )}
       style={{
         borderRadius: '50px', // Full curve, pill looking
+        width: 'min(450px, calc(100% - 48px))',
+        maxWidth: '450px',
+        left: '50%',
+        transform: 'translateX(-50%)',
       }}
       onSubmit={handleSubmit}
     >
@@ -70,8 +75,8 @@ export const NeonPromptInput: React.FC<NeonPromptInputProps> = ({
           'flex-1',
           'rounded-full',
           'border-none',
-          // Remove any hint of yellow from shadows.
-          'shadow-[0_0_12px_0px_rgba(16,185,129,0.8)]',
+          // subtle neon glow on focus
+          'shadow-[0_0_10px_0px_rgba(56,189,248,0.06)]',
           'bg-background',
           'text-white',
           'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2'
@@ -91,7 +96,7 @@ export const NeonPromptInput: React.FC<NeonPromptInputProps> = ({
             'rounded-full',
             'p-2',
           'bg-primary text-primary-foreground',
-            'shadow-[0_0_10px_2px_rgba(16,185,129,0.7)]',
+            'shadow-[0_0_10px_2px_rgba(16,185,129,0.6)]',
             'hover:bg-primary/80 transition',
             'flex items-center justify-center'
         )}

@@ -1,6 +1,10 @@
 export type ManagerAnalyticsTimeWindow = 'monthly' | 'quarterly' | 'yearly';
 
 export interface ManagerAnalytics {
+    totalCows: number;
+    activeReminders: number;
+    completedSyncs: number;
+    pregnancyRate: number;
   timeWindow: ManagerAnalyticsTimeWindow;
   profitToSpending: number;
   profit: number;
@@ -20,9 +24,10 @@ export interface ManagerAnalytics {
   overdueReminders: number;
   completionRate: number;
   workforceForecast: Array<{
-    period: string;
-    requiredLaborHours: number;
-    projectedShortfall: number;
+    date: string;
+    workers: number;
+    technicians: number;
+    doctors: number;
   }>;
   projection: Array<{
     timeHorizon: string;

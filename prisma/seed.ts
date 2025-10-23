@@ -1,8 +1,31 @@
 import { Prisma, PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 import { mockCows, mockReminders, predefinedSyncMethods } from '../src/data/mockData';
+import { mockUsers } from '../src/data/mockUsers';
 
 const prisma = new PrismaClient();
+
+async function seedUsers() {
+  for (const user of mockUsers) {
+    const hashedPassword = await bcrypt.hash(user.password, 12);
+    await prisma.user.create({
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email.toLowerCase(),
+        password: hashedPassword,
+        role: user.role,
+        isActive: user.isActive,
+        timezone: user.timezone,
+        language: user.language,
+        twoFactorEnabled: user.twoFactorEnabled,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+  }
+}
 
 type StepIdMap = Record<string, string>;
 
@@ -102,11 +125,16 @@ async function seedReminders(methodMap: SyncMethodSeedMap) {
 }
 
 async function main() {
+  // Clean up existing data
   await prisma.reminder.deleteMany();
   await prisma.syncStep.deleteMany();
   await prisma.syncMethod.deleteMany();
   await prisma.cow.deleteMany();
+  await prisma.session.deleteMany();
+  await prisma.user.deleteMany();
 
+  // Seed all data
+  await seedUsers();
   const syncMethodMap = await seedSyncMethods();
   await seedCows();
   await seedReminders(syncMethodMap);

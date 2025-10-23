@@ -4,29 +4,7 @@ import * as jwt from 'jsonwebtoken';
 import { AuthUser, Permission, UserRole, LoginCredentials, RegisterData, AuditLog, SystemLog } from '@/types';
 import { SessionToken, MockUser, MockSession, MockAuditLog, MockSystemLog } from '@/types/mock';
 
-// JWT Helper functions
-const createToken = (payload: Omit<SessionToken, 'iat' | 'exp'>): string => {
-  const secret = process.env.JWT_SECRET;
-  const secretBuffer = Buffer.from(secret, 'hex');
-  const secretKey = createSecretKey(secretBuffer);
-  return jwt.sign(payload, secretKey, { 
-    algorithm: 'HS256', 
-    expiresIn: '30d',
-    encoding: 'utf8'
-  });
-};
-
-const verifyToken = (token: string): SessionToken | null => {
-  const secret = process.env.JWT_SECRET;
-  const secretBuffer = Buffer.from(secret, 'hex');
-  const secretKey = createSecretKey(secretBuffer);
-  try {
-    return jwt.verify(token, secretKey) as SessionToken;
-  } catch (error) {
-    console.error('JWT Verification failed:', error);
-    return null;
-  }
-};
+import { signToken, verifyToken } from '@/lib/jwt';
 // Mock database
 const mockUsers: MockUser[] = [
   {
@@ -135,7 +113,7 @@ export class MockAuthService {
 
   // Session management
   static async createSession(userId: string, ipAddress?: string, userAgent?: string): Promise<string> {
-    const sessionToken = createToken({ userId });
+    const sessionToken = signToken({ userId }, { expiresIn: '30d' });
     
     const session = {
       id: `session-${Date.now()}`,
@@ -430,12 +408,9 @@ export class MockAuthService {
       return;
     }
 
-    const secret = process.env.JWT_SECRET;
+    const secret = process.env.JWT_SECRET || 'fallback-secret-for-mock-service';
     const secretBuffer = Buffer.from(secret, 'hex');
     const secretKey = createSecretKey(secretBuffer);
-    if (!secret) {
-      throw new Error('JWT_SECRET is not configured');
-    }
     const resetToken = jwt.sign({ userId: user.id } as jwt.JwtPayload, secretKey, { expiresIn: '1h' });
 
     user.passwordResetToken = resetToken;
@@ -449,7 +424,7 @@ export class MockAuthService {
     try {
       const decoded = verifyToken(token) as { userId: string };
       if (!decoded) {
-        return null;
+        throw new Error('Invalid token');
       }
       
       const user = mockUsers.find(u => 
@@ -465,8 +440,8 @@ export class MockAuthService {
       const hashedPassword = await this.hashPassword(newPassword);
 
       user.password = hashedPassword;
-      user.passwordResetToken = null;
-      user.passwordResetExpires = null;
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
 
       // Revoke all sessions for security
       await this.revokeAllUserSessions(user.id);

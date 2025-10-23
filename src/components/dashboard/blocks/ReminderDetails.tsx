@@ -54,7 +54,7 @@ export const ReminderDetails: React.FC<ReminderDetailsProps> = ({
                 <span className="text-muted-foreground">{rem.title}</span>
                 <span className="text-xs ml-2 text-muted-foreground">due {rem.dueDate}</span>
               </span>
-              <Button size="xs" onClick={() => onCompleteReminder(rem.id)}>
+              <Button size="sm" onClick={() => onCompleteReminder(rem.id)}>
                 Complete
               </Button>
             </div>

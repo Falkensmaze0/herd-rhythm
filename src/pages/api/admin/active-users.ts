@@ -34,7 +34,7 @@ export default async function handler(
       select: { userId: true },
       distinct: ['userId']
     });
-    const userIds = recentLogs.map(log => log.userId);
+    const userIds = recentLogs.map(log => log.userId).filter((id): id is string => id !== null);
 
     const activeUsers = userIds.length > 0
       ? await prisma.user.findMany({

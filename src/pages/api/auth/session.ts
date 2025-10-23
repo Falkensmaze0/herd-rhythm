@@ -27,7 +27,20 @@ export default async function handler(
       });
     }
 
-const user = await AuthService.validateSession(sessionToken);
+let user;
+    try {
+      user = await AuthService.validateSession(sessionToken);
+    } catch (validationError: any) {
+      // Clear invalid session cookie
+      res.setHeader('Set-Cookie', [
+        'sessionToken=; HttpOnly; Secure; SameSite=Strict; Max-Age=0; Path=/'
+      ]);
+      
+      return res.status(401).json({
+        success: false,
+        message: validationError.message || 'Invalid or expired session'
+      });
+    }
 
     if (!user) {
       // Clear invalid session cookie

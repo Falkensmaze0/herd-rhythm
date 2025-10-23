@@ -14,13 +14,29 @@ interface Timeseries { [key: string]: [string, number][] }
 interface StatsEntry { avg: number; min: number; max: number; }
 interface StatsSummary { [metric: string]: StatsEntry }
 interface SystemMetricsAPI {
-  last: any;
-  stats: StatsSummary;
-  timeseries: Timeseries;
-  interval: string;
-  window: string;
-  firstTimestamp: string;
-  lastTimestamp: string;
+  cpuLoad: number[];
+  ram: {
+    total: number;
+    free: number;
+    used: number;
+    usagePercent: number;
+  };
+  uptimeSeconds: number;
+  nodeVersion: string;
+  arch: string;
+  platform: string;
+  hostname: string;
+  apiRequestsLast10min: number;
+  network: {
+    interfaces: Record<string, {address: string, family: string, internal: boolean}[]>
+  };
+  process: {
+    pid: number;
+    memoryUsageMB: number;
+    startTime: string;
+  };
+  downtimes: {start: string, end: string, reason?: string}[];
+  feedbackCount: number;
 }
 
 export const AdminDashboard: React.FC = () => {
@@ -60,9 +76,15 @@ export const AdminDashboard: React.FC = () => {
 
   const SystemHealthCard = () => {
     if (!metricsData) return null;
-    const { stats, timeseries, last } = metricsData;
-    const cpuSeries = timeseries.cpuUsage.map(([ts, v]: any) => ({ x: new Date(ts), y: v }));
-    const memSeries = timeseries.memoryUsage.map(([ts, v]: any) => ({ x: new Date(ts), y: v }));
+    
+    // Calculate average CPU load across all cores
+    const cpuUsage = metricsData.cpuLoad.reduce((a, b) => a + b, 0) / metricsData.cpuLoad.length;
+    const memUsage = metricsData.ram.usagePercent;
+    
+    // Create single point data for current values
+    const currentTime = new Date();
+    const cpuSeries = [{ x: currentTime, y: cpuUsage }];
+    const memSeries = [{ x: currentTime, y: memUsage }];
     const chartData = {
       labels: cpuSeries.map(p => p.x.toLocaleTimeString()),
       datasets: [
@@ -115,13 +137,13 @@ export const AdminDashboard: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <div className="font-medium">CPU Latest</div>
-              <div>{last.cpuUsage?.toFixed(1)}%</div>
-              <div className="text-xs text-gray-500">Avg: {stats.cpuUsage.avg.toFixed(1)}%, Max: {stats.cpuUsage.max.toFixed(1)}%, Min: {stats.cpuUsage.min.toFixed(1)}%</div>
+              <div>{cpuUsage.toFixed(1)}%</div>
+              <div className="text-xs text-gray-500">Across {metricsData.cpuLoad.length} CPU cores</div>
             </div>
             <div>
               <div className="font-medium">RAM Latest</div>
-              <div>{last.memoryUsage?.toFixed(1)}%</div>
-              <div className="text-xs text-gray-500">Avg: {stats.memoryUsage.avg.toFixed(1)}%, Max: {stats.memoryUsage.max.toFixed(1)}%, Min: {stats.memoryUsage.min.toFixed(1)}%</div>
+              <div>{memUsage.toFixed(1)}%</div>
+              <div className="text-xs text-gray-500">Total: {(metricsData.ram.total / 1e9).toFixed(1)}GB, Free: {(metricsData.ram.free / 1e9).toFixed(1)}GB</div>
             </div>
           </div>
         </CardContent>
@@ -172,3 +194,4 @@ export const AdminDashboard: React.FC = () => {
   );
 };
 
+export default AdminDashboard;

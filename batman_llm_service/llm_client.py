@@ -30,7 +30,7 @@ async def complete_with_llm(
         url = api_base.rstrip("/") + OLLAMA_ENDPOINT
         resp = await client.post(url, json=payload, headers=headers, timeout=60)
         resp.raise_for_status()
-                data = resp.json()
+        data = resp.json()
         # Aggregate plain response
         return data.get("response", "").strip()
 

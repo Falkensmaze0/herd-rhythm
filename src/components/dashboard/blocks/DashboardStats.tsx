@@ -10,7 +10,7 @@
 
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Users, CheckCircle, Sync, Percent } from 'lucide-react';
+import { Users, CheckCircle, RefreshCw, Percent } from 'lucide-react';
 
 interface Analytics {
   totalCows: number;
@@ -35,20 +35,20 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ analytics, class
       label: 'Total Cows',
       value: analytics.totalCows,
       Icon: Users,
-      bg: 'bg-accent', // Use your theme token, e.g., bg-accent or bg-brand-muted
+      bg: 'bg-accent',
       text: 'text-primary'
     },
     {
       label: 'Active Reminders',
       value: analytics.activeReminders,
       Icon: CheckCircle,
-      bg: 'bg-yellow-50', // Replace with an appropriate theme class if possible
-      text: 'text-yellow-800'
+      bg: 'bg-blue-50',
+      text: 'text-blue-800'
     },
     {
       label: 'Completed Syncs',
       value: analytics.completedSyncs,
-      Icon: Sync,
+      Icon: RefreshCw,
       bg: 'bg-green-50',
       text: 'text-green-800'
     },
