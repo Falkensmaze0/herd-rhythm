@@ -8,14 +8,23 @@ interface CowFormProps {
   onCancel: () => void;
 }
 
+type CowFormState = {
+  name: string;
+  breed: string;
+  age: number;
+  lastSyncDate: string;
+  healthNotes: string;
+  status: Cow['status'];
+};
+
 const CowForm: React.FC<CowFormProps> = ({ cow, onSave, onCancel }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CowFormState>({
     name: cow?.name || '',
     breed: cow?.breed || '',
     age: cow?.age || 1,
     lastSyncDate: cow?.lastSyncDate || '',
     healthNotes: cow?.healthNotes || '',
-    status: cow?.status || 'active' as const
+    status: cow?.status || 'active',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -50,10 +59,10 @@ const CowForm: React.FC<CowFormProps> = ({ cow, onSave, onCancel }) => {
     }
   };
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = <Key extends keyof CowFormState>(field: Key, value: CowFormState[Key]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+    if (errors[field as string]) {
+      setErrors(prev => ({ ...prev, [field as string]: '' }));
     }
   };
 
@@ -108,7 +117,7 @@ const CowForm: React.FC<CowFormProps> = ({ cow, onSave, onCancel }) => {
               min="1"
               max="20"
               value={formData.age}
-              onChange={(e) => handleChange('age', parseInt(e.target.value))}
+              onChange={(e) => handleChange('age', Number(e.target.value))}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-vet-blue"
             />
             {errors.age && <p className="text-red-500 text-sm mt-1">{errors.age}</p>}

@@ -34,7 +34,7 @@ const WorkforceSetup: React.FC<WorkforceSetupProps> = ({ method, onSave, onCance
     ));
   };
 
-  const useDefaults = (stepIndex: number, taskType: string) => {
+  const applyDefaultRequirements = (stepIndex: number, taskType: string) => {
     const defaults = defaultRequirements[taskType] || defaultRequirements['custom'];
     setSteps(prev => prev.map((step, index) => 
       index === stepIndex 
@@ -128,7 +128,7 @@ const WorkforceSetup: React.FC<WorkforceSetupProps> = ({ method, onSave, onCance
                     )}
                   </div>
                   <button
-                    onClick={() => useDefaults(index, taskType)}
+                    onClick={() => applyDefaultRequirements(index, taskType)}
                     className="text-sm vet-button-secondary ml-4"
                   >
                     Use Defaults

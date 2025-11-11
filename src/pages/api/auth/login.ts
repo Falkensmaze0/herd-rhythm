@@ -42,15 +42,24 @@ export default async function handler(
       userAgent
     );
 
+    const isProduction = process.env.NODE_ENV === 'production';
+    const baseFlags = ['HttpOnly', 'SameSite=Strict', 'Path=/'];
+    if (isProduction) {
+      baseFlags.splice(1, 0, 'Secure');
+    }
+    const sessionCookie = (maxAge?: number) => {
+      const flags = [...baseFlags];
+      if (typeof maxAge === 'number') {
+        flags.push(`Max-Age=${maxAge}`);
+      }
+      return `sessionToken=${sessionToken}; ${flags.join('; ')}`;
+    };
+
     // Set session cookie if remember me is enabled
     if (credentials.rememberMe) {
-      res.setHeader('Set-Cookie', [
-        `sessionToken=${sessionToken}; HttpOnly; Secure; SameSite=Strict; Max-Age=${30 * 24 * 60 * 60}; Path=/`
-      ]);
+      res.setHeader('Set-Cookie', [sessionCookie(30 * 24 * 60 * 60)]);
     } else {
-      res.setHeader('Set-Cookie', [
-        `sessionToken=${sessionToken}; HttpOnly; Secure; SameSite=Strict; Path=/`
-      ]);
+      res.setHeader('Set-Cookie', [sessionCookie()]);
     }
 
     // Remove sensitive data from response

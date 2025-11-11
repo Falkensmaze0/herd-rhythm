@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,7 @@ import {
   Archive
 } from 'lucide-react';
 import { format, addDays, addHours, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import { DashboardSkeleton } from './DashboardSkeleton';
 
 interface AppointmentProps {
   appointments: {
@@ -39,6 +40,8 @@ interface AppointmentProps {
     contactPhone?: string;
   }[];
 }
+
+type Appointment = AppointmentProps['appointments'][number];
 
 const AppointmentsCard: React.FC<AppointmentProps> = ({ appointments }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -160,6 +163,8 @@ interface CommunicationsProps {
     snippet?: string;
   }[];
 }
+
+type Communication = CommunicationsProps['communications'][number];
 
 const CommunicationsCard: React.FC<CommunicationsProps> = ({ communications }) => {
   const recentComms = communications.filter(comm => 
@@ -305,6 +310,8 @@ interface AdminTasksProps {
   }[];
 }
 
+type AdminTask = AdminTasksProps['tasks'][number];
+
 const AdminTasksCard: React.FC<AdminTasksProps> = ({ tasks }) => {
   const pendingTasks = tasks.filter(t => t.status !== 'completed');
   
@@ -401,16 +408,12 @@ const AdminTasksCard: React.FC<AdminTasksProps> = ({ tasks }) => {
 
 export const OfficeDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [appointments, setAppointments] = useState<any[]>([]);
-  const [communications, setCommunications] = useState<any[]>([]);
-  const [adminTasks, setAdminTasks] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [communications, setCommunications] = useState<Communication[]>([]);
+  const [adminTasks, setAdminTasks] = useState<AdminTask[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       // Mock data - replace with actual API calls
@@ -526,7 +529,11 @@ export const OfficeDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   const QuickActions: React.FC = () => (
     <Card>
@@ -558,14 +565,11 @@ export const OfficeDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Office Dashboard</h1>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-64 bg-gray-200 animate-pulse rounded-lg" />
-          ))}
-        </div>
-      </div>
+      <DashboardSkeleton
+        title="Office Dashboard"
+        description="Gathering appointments and communications..."
+        cardCount={4}
+      />
     );
   }
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserRole } from '@/types';
+import { AuthUser, UserRole } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -31,7 +31,7 @@ const LoadingScreen: React.FC = () => (
   </div>
 );
 
-const UnauthorizedScreen: React.FC<{ requiredRole?: UserRole; user?: any }> = ({ 
+const UnauthorizedScreen: React.FC<{ requiredRole?: UserRole; user?: AuthUser }> = ({ 
   requiredRole, 
   user 
 }) => (

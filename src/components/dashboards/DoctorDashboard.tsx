@@ -34,6 +34,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { fetchWithAuth } from '@/lib/apiClient';
+import { DashboardSkeleton } from './DashboardSkeleton';
 
 type HealthAnalyticsSummary = {
   window: string;
@@ -185,8 +187,8 @@ export const DoctorDashboard: React.FC = () => {
       setError(null);
       try {
         const [healthRes, complianceRes] = await Promise.all([
-          fetch(`/api/doctor/health-analytics?window=${windowParam}`),
-          fetch(`/api/doctor/compliance?window=${windowParam}`),
+          fetchWithAuth(`/api/doctor/health-analytics?window=${windowParam}`),
+          fetchWithAuth(`/api/doctor/compliance?window=${windowParam}`),
         ]);
 
         const healthJson = await healthRes.json();
@@ -363,14 +365,10 @@ export const DoctorDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Medical Intelligence Dashboard</h1>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, index) => (
-            <div key={index} className="h-64 animate-pulse rounded-lg bg-muted" />
-          ))}
-        </div>
-      </div>
+      <DashboardSkeleton
+        title="Medical Intelligence Dashboard"
+        description={`Collecting ${windowLabel.toLowerCase()} health telemetry...`}
+      />
     );
   }
 

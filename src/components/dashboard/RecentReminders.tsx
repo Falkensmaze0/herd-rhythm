@@ -1,14 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-import { Reminder } from '../../types';
+import { Reminder, Cow, SyncMethod } from '../../types';
 import { format } from 'date-fns';
 import ReminderDetails from './ReminderDetails';
 import { ReminderService } from '../../services/ReminderService';
 
 interface RecentRemindersProps {
   reminders: Reminder[];
-  cows?: any[];
-  syncMethods?: any[];
+  cows?: Cow[];
+  syncMethods?: SyncMethod[];
   onCompleteReminder: (id: string) => void;
 }
 
@@ -37,7 +37,7 @@ const RecentReminders: React.FC<RecentRemindersProps> = ({
     setTodaysReminders(today);
   }, [reminders, cows, syncMethods]);
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityColor = (priority: Reminder['priority']) => {
     switch (priority) {
       case 'high': return 'bg-red-100 text-red-800';
       case 'medium': return 'bg-yellow-100 text-yellow-800';
@@ -46,7 +46,7 @@ const RecentReminders: React.FC<RecentRemindersProps> = ({
     }
   };
 
-  const getTypeIcon = (type: string) => {
+  const getTypeIcon = (type: Reminder['type']) => {
     switch (type) {
       case 'injection': return '💉';
       case 'checkup': return '🔍';

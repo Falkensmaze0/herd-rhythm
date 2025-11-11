@@ -86,7 +86,11 @@ const SyncMethodForm: React.FC<SyncMethodFormProps> = ({ method, onSave, onCance
     }
   };
 
-  const updateStep = (index: number, field: keyof SyncStep, value: any) => {
+  const updateStep = <K extends keyof SyncStep>(
+    index: number,
+    field: K,
+    value: SyncStep[K]
+  ) => {
     setFormData(prev => ({
       ...prev,
       steps: prev.steps.map((step, i) => 

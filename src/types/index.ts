@@ -155,8 +155,8 @@ export interface AuditLog {
   action: ActionType;
   resource: string;
   resourceId?: string;
-  oldValues?: any;
-  newValues?: any;
+  oldValues?: Record<string, unknown> | null;
+  newValues?: Record<string, unknown> | null;
   ipAddress?: string;
   userAgent?: string;
   success: boolean;
@@ -188,7 +188,7 @@ export interface SystemLog {
   level: LogLevel;
   category: string;
   message: string;
-  details?: any;
+  details?: Record<string, unknown> | null;
   source?: string;
   stackTrace?: string;
   userId?: string;
@@ -235,7 +235,7 @@ export interface UserNotification {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   read: boolean;
   actionUrl?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -268,7 +268,7 @@ export interface DashboardWidget {
   title: string;
   size: 'small' | 'medium' | 'large' | 'full';
   position: { x: number; y: number; w: number; h: number };
-  props?: any;
+  props?: Record<string, unknown>;
 }
 
 export interface NavigationItem {

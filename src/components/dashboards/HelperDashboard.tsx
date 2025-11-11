@@ -21,6 +21,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { format, addHours, startOfDay } from 'date-fns';
+import { DashboardSkeleton } from './DashboardSkeleton';
 
 interface DailyTasksProps {
   tasks: {
@@ -38,6 +39,8 @@ interface DailyTasksProps {
     notes?: string;
   }[];
 }
+
+type HelperTask = DailyTasksProps['tasks'][number];
 
 const DailyTasksCard: React.FC<DailyTasksProps> = ({ tasks }) => {
   const pendingTasks = tasks.filter(t => t.status === 'pending' || t.status === 'in-progress');
@@ -187,6 +190,8 @@ interface CowStatusProps {
   };
 }
 
+type CowStatusType = CowStatusProps['status'];
+
 const CowStatusCard: React.FC<CowStatusProps> = ({ status }) => {
   const feedingProgress = (status.fedCows / status.totalCows) * 100;
   const cleaningProgress = (status.cleanedAreas / status.totalAreas) * 100;
@@ -302,6 +307,8 @@ interface WorkLogProps {
   }[];
 }
 
+type WorkLogEntry = WorkLogProps['logs'][number];
+
 const WorkLogCard: React.FC<WorkLogProps> = ({ logs }) => {
   const todayLogs = logs.filter(log => 
     format(new Date(log.timestamp), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
@@ -391,9 +398,9 @@ const WorkLogCard: React.FC<WorkLogProps> = ({ logs }) => {
 
 export const HelperDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [cowStatus, setCowStatus] = useState<any>(null);
-  const [workLog, setWorkLog] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<HelperTask[]>([]);
+  const [cowStatus, setCowStatus] = useState<CowStatusType | null>(null);
+  const [workLog, setWorkLog] = useState<WorkLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -527,14 +534,11 @@ export const HelperDashboard: React.FC = () => {
 
   if (loading || !cowStatus) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Helper Dashboard</h1>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-64 bg-gray-200 animate-pulse rounded-lg" />
-          ))}
-        </div>
-      </div>
+      <DashboardSkeleton
+        title="Helper Dashboard"
+        description="Syncing shift tasks and herd vitals..."
+        cardCount={4}
+      />
     );
   }
 

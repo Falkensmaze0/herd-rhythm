@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,7 @@ import {
   Zap
 } from 'lucide-react';
 import { format, addDays, addHours } from 'date-fns';
+import { DashboardSkeleton } from './DashboardSkeleton';
 
 interface BreedingStatsProps {
   stats: {
@@ -37,6 +38,8 @@ interface BreedingStatsProps {
     avgConceptionRate: number;
   };
 }
+
+type BreedingStats = BreedingStatsProps['stats'];
 
 const BreedingStatsCard: React.FC<BreedingStatsProps> = ({ stats }) => {
   const completionRate = (stats.currentMonthAI / stats.monthlyTarget) * 100;
@@ -125,6 +128,8 @@ interface SyncCalendarProps {
     notes?: string;
   }[];
 }
+
+type SyncEvent = SyncCalendarProps['events'][number];
 
 const SyncCalendarCard: React.FC<SyncCalendarProps> = ({ events }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -242,6 +247,8 @@ interface AIProceduresProps {
   }[];
 }
 
+type AIProcedure = AIProceduresProps['procedures'][number];
+
 const AIProceduresCard: React.FC<AIProceduresProps> = ({ procedures }) => {
   const todayProcedures = procedures.filter(proc => 
     format(new Date(proc.aiTiming), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
@@ -341,6 +348,8 @@ interface SuccessRatesProps {
   };
 }
 
+type SuccessRates = SuccessRatesProps['data'];
+
 const SuccessRatesCard: React.FC<SuccessRatesProps> = ({ data }) => {
   const successRate = (data.successful / data.total) * 100;
   const pendingRate = (data.pending / data.total) * 100;
@@ -413,17 +422,13 @@ const SuccessRatesCard: React.FC<SuccessRatesProps> = ({ data }) => {
 
 export const TechnicianDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [breedingStats, setBreedingStats] = useState<any>(null);
-  const [syncEvents, setSyncEvents] = useState<any[]>([]);
-  const [aiProcedures, setAiProcedures] = useState<any[]>([]);
-  const [successRates, setSuccessRates] = useState<any>(null);
+  const [breedingStats, setBreedingStats] = useState<BreedingStats | null>(null);
+  const [syncEvents, setSyncEvents] = useState<SyncEvent[]>([]);
+  const [aiProcedures, setAiProcedures] = useState<AIProcedure[]>([]);
+  const [successRates, setSuccessRates] = useState<SuccessRates | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       // Mock data - replace with actual API calls
@@ -506,7 +511,11 @@ export const TechnicianDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   const QuickActions: React.FC = () => (
     <Card>
@@ -538,14 +547,10 @@ export const TechnicianDashboard: React.FC = () => {
 
   if (loading || !breedingStats || !successRates) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Technician Dashboard</h1>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-64 bg-gray-200 animate-pulse rounded-lg" />
-          ))}
-        </div>
-      </div>
+      <DashboardSkeleton
+        title="Technician Dashboard"
+        description="Loading breeding stats and schedules..."
+      />
     );
   }
 

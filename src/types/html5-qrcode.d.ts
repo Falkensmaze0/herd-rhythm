@@ -1,7 +1,7 @@
 declare module 'html5-qrcode' {
   export class Html5Qrcode {
     constructor(elementId: string);
-    start(...args: any[]): Promise<void>;
+    start(...args: unknown[]): Promise<void>;
     stop(): Promise<void>;
     clear(): Promise<void>;
     // Add more methods if needed
@@ -13,7 +13,7 @@ declare module 'html5-qrcode' {
 
 declare class Html5Qrcode {
   constructor(elementId: string);
-  start(...args: any[]): Promise<void>;
+  start(...args: unknown[]): Promise<void>;
   stop(): Promise<void>;
   clear(): Promise<void>;
 }
