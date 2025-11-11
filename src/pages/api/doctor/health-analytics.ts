@@ -3,12 +3,14 @@ import { AuthService } from '@/services/AuthService.server';
 import { prisma } from '@/lib/prisma';
 
 // Strict ML-friendly type for doctor analytics
+type CohortStats = Record<string, Record<string, number>>;
+
 type HealthAnalyticsSummary = {
   window: string;
   eventCounts: Record<string, number>; // illness, death, recovery, pregnancy, etc
   timeseries: Record<string, { x: string, y: number }[]>; // type-timestamp-value arrays
   outcomeBreakdown: Record<string, number>; // by intervention/outcome/cause
-  cohortStats: Record<string, any>; // ready for subcohorts or grouping
+  cohortStats: CohortStats; // ready for subcohorts or grouping
   atRiskAnimals: {cowId: string, eventType: string, lastSeen: string, status: string}[];
 }
 
@@ -64,7 +66,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .filter(ev => ev.eventType==='illness' && (!ev.outcome || ev.outcome!=='recovery'))
       .map(ev => ({cowId: ev.cowId, eventType: ev.eventType, lastSeen: ev.createdAt.toISOString(), status: ev.outcome||'unresolved'}));
     // Cohorts - by breed/age/status etc: for extensibility
-    const cohortStats: Record<string, any> = {};
+    const cohortStats: CohortStats = {};
     // (Add grouping code as needed for research)
     return res.status(200).json({
       success: true,

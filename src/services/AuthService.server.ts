@@ -1,16 +1,128 @@
+import { Prisma } from '@prisma/client';
+import type { PrismaClient, User as PrismaUser, ActionType as PrismaActionType } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { AuthUser, Permission, UserRole, LoginCredentials, RegisterData, AuditLog, SystemLog } from '@/types';
+import { AuthUser, Permission, UserRole, LoginCredentials, RegisterData, AuditLog, SystemLog, UserPreferences } from '@/types';
 import { signToken, verifyToken } from '@/lib/jwt';
 import { MockAuthService } from './MockAuthService';
 
-// Dynamic import of prisma to handle cases where DB is not available
-let prisma: any = null;
-try {
-  const { prisma: prismaClient } = require('@/lib/prisma');
-  prisma = prismaClient;
-} catch (error) {
-  console.warn('Prisma not available, using mock service');
-}
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : 'Unknown error';
+
+let prisma: PrismaClient | null = null;
+
+const initializePrisma = async (): Promise<void> => {
+  try {
+    const { prisma: prismaClient } = await import('@/lib/prisma');
+    prisma = prismaClient;
+  } catch (error) {
+    console.warn('Prisma not available, using mock service:', getErrorMessage(error));
+  }
+};
+
+const getPrismaClient = (): PrismaClient => {
+  if (!prisma) {
+    throw new Error('Prisma client is not initialized');
+  }
+  return prisma;
+};
+
+void initializePrisma();
+
+type JsonRecord = Record<string, unknown>;
+
+const isJsonRecord = (value: unknown): value is JsonRecord =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const toTheme = (value: unknown): UserPreferences['theme'] => {
+  if (value === 'light' || value === 'dark' || value === 'system') {
+    return value;
+  }
+  return 'system';
+};
+
+const toCowListView = (value: unknown): UserPreferences['defaultViews']['cowList'] =>
+  value === 'table' ? 'table' : 'grid';
+
+const toCalendarView = (value: unknown): UserPreferences['defaultViews']['calendar'] => {
+  if (value === 'week' || value === 'day') {
+    return value;
+  }
+  return 'month';
+};
+
+const toBoolean = (value: unknown, fallback: boolean): boolean =>
+  typeof value === 'boolean' ? value : fallback;
+
+const toStringOr = (value: unknown, fallback: string): string =>
+  typeof value === 'string' ? value : fallback;
+
+const toWidgetList = (value: unknown): string[] =>
+  Array.isArray(value) ? value.map((widget) => String(widget)) : [];
+
+const normalizePreferences = (
+  preferences: Prisma.JsonValue | null,
+): UserPreferences | undefined => {
+  if (!isJsonRecord(preferences)) {
+    return undefined;
+  }
+
+  const notificationsSource = isJsonRecord(preferences.notifications) ? preferences.notifications : {};
+  const dashboardSource = isJsonRecord(preferences.dashboard) ? preferences.dashboard : {};
+  const defaultViewsSource = isJsonRecord(preferences.defaultViews) ? preferences.defaultViews : {};
+
+  return {
+    theme: toTheme(preferences.theme),
+    notifications: {
+      email: toBoolean(notificationsSource.email, true),
+      push: toBoolean(notificationsSource.push, true),
+      sms: toBoolean(notificationsSource.sms, false),
+    },
+    dashboard: {
+      layout: toStringOr(dashboardSource.layout, 'default'),
+      widgets: toWidgetList(dashboardSource.widgets),
+    },
+    defaultViews: {
+      cowList: toCowListView(defaultViewsSource.cowList),
+      calendar: toCalendarView(defaultViewsSource.calendar),
+    },
+  };
+};
+
+const toStringArray = (value: Prisma.JsonValue | null | undefined): string[] | undefined => {
+  if (!value || !Array.isArray(value)) {
+    return undefined;
+  }
+
+  return value.map((item) => String(item));
+};
+
+const formatAuthUser = (
+  user: PrismaUser,
+  permissions: Permission[],
+  sessionToken?: string,
+): AuthUser => ({
+  id: user.id,
+  name: user.name,
+  email: user.email,
+  password: user.password,
+  role: user.role as UserRole,
+  isActive: user.isActive,
+  avatar: user.avatar ?? undefined,
+  phone: user.phone ?? undefined,
+  department: user.department ?? undefined,
+  licenseNumber: user.licenseNumber ?? undefined,
+  specializations: toStringArray(user.specializations),
+  preferences: normalizePreferences(user.preferences),
+  timezone: user.timezone,
+  language: user.language,
+  emailVerified: user.emailVerified ? user.emailVerified.toISOString() : undefined,
+  lastLogin: user.lastLogin ? user.lastLogin.toISOString() : undefined,
+  twoFactorEnabled: user.twoFactorEnabled,
+  createdAt: user.createdAt.toISOString(),
+  updatedAt: user.updatedAt.toISOString(),
+  permissions,
+  sessionToken,
+});
 
 export class AuthService {
   private static get useMockService(): boolean {
@@ -26,7 +138,7 @@ export class AuthService {
     try {
       return await dbOperation();
     } catch (error) {
-      console.warn('Database operation failed, falling back to mock service:', error.message);
+      console.warn('Database operation failed, falling back to mock service:', getErrorMessage(error));
       return mockOperation();
     }
   }
@@ -45,8 +157,9 @@ export class AuthService {
     return this.withFallback(
       async () => {
         const sessionToken = signToken({ userId }, { expiresIn: '30d' });
+        const client = getPrismaClient();
         
-        await prisma.session.create({
+        await client.session.create({
           data: {
             sessionToken,
             userId,
@@ -56,7 +169,7 @@ export class AuthService {
           },
         });
 
-    return sessionToken;
+        return sessionToken;
       },
       () => MockAuthService.createSession(userId, ipAddress, userAgent)
     );
@@ -66,6 +179,7 @@ export class AuthService {
     return this.withFallback(
       async () => {
         try {
+          const client = getPrismaClient();
           // Verify the JWT token
           const decodedToken = verifyToken<{ userId: string }>(sessionToken);
           if (!decodedToken) {
@@ -73,14 +187,14 @@ export class AuthService {
           }
 
           // Then check if session exists and is valid
-          const session = await prisma.session.findUnique({
+          const session = await client.session.findUnique({
             where: { sessionToken },
             include: { user: true },
           });
 
           if (!session || session.expires < new Date()) {
             if (session) {
-              await prisma.session.delete({ where: { id: session.id } });
+              await client.session.delete({ where: { id: session.id } });
             }
             return null;
           }
@@ -91,11 +205,11 @@ export class AuthService {
             return null;
           }
 
-          const authUser: AuthUser = {
-            ...session.user,
-            permissions: this.getPermissions(session.user.role),
-            sessionToken: session.sessionToken,
-          };
+          const authUser = formatAuthUser(
+            session.user,
+            this.getPermissions(session.user.role),
+            session.sessionToken,
+          );
 
           return authUser;
         } catch (error) {
@@ -109,14 +223,20 @@ export class AuthService {
 
   static async revokeSession(sessionToken: string): Promise<void> {
     return this.withFallback(
-      () => prisma.session.deleteMany({ where: { sessionToken } }),
+      async () => {
+        const client = getPrismaClient();
+        await client.session.deleteMany({ where: { sessionToken } });
+      },
       () => MockAuthService.revokeSession(sessionToken)
     );
   }
 
   static async revokeAllUserSessions(userId: string): Promise<void> {
     return this.withFallback(
-      () => prisma.session.deleteMany({ where: { userId } }),
+      async () => {
+        const client = getPrismaClient();
+        await client.session.deleteMany({ where: { userId } });
+      },
       () => MockAuthService.revokeAllUserSessions(userId)
     );
   }
@@ -137,7 +257,8 @@ export class AuthService {
     return this.withFallback(
       async () => {
         console.log('🔍 Using Database for login');
-        const user = await prisma.user.findUnique({
+        const client = getPrismaClient();
+        const user = await client.user.findUnique({
           where: { email: credentials.email.toLowerCase() }
         });
 
@@ -180,7 +301,7 @@ export class AuthService {
         }
 
         // Update last login
-        await prisma.user.update({
+        await client.user.update({
           where: { id: user.id },
           data: { lastLogin: new Date() }
         });
@@ -200,11 +321,11 @@ export class AuthService {
           userAgent,
         });
 
-        const authUser: AuthUser = {
-          ...user,
-          permissions: this.getPermissions(user.role),
+        const authUser = formatAuthUser(
+          user,
+          this.getPermissions(user.role),
           sessionToken,
-        };
+        );
 
         console.log('🔍 Login successful, user role:', user.role);
         return { user: authUser, sessionToken };
@@ -221,7 +342,8 @@ export class AuthService {
   static async register(data: RegisterData): Promise<AuthUser> {
     return this.withFallback(
       async () => {
-        const existingUser = await prisma.user.findUnique({
+        const client = getPrismaClient();
+        const existingUser = await client.user.findUnique({
           where: { email: data.email.toLowerCase() }
         });
 
@@ -229,9 +351,9 @@ export class AuthService {
           throw new Error('User already exists with this email');
         }
 
-    const hashedPassword = await this.hashPassword(data.password);
+        const hashedPassword = await this.hashPassword(data.password);
 
-        const user = await prisma.user.create({
+        const user = await client.user.create({
           data: {
             ...data,
             email: data.email.toLowerCase(),
@@ -249,12 +371,12 @@ export class AuthService {
           success: true,
         });
 
-        const authUser: AuthUser = {
-          ...user,
-          permissions: this.getPermissions(user.role),
-        };
+        const authUser = formatAuthUser(
+          user,
+          this.getPermissions(user.role),
+        );
 
-    return authUser;
+        return authUser;
       },
       () => MockAuthService.register(data)
     );
@@ -344,16 +466,21 @@ export class AuthService {
   static async logAuditEvent(data: Partial<AuditLog>): Promise<void> {
     return this.withFallback(
       async () => {
-        await prisma.auditLog.create({
+        const client = getPrismaClient();
+        await client.auditLog.create({
           data: {
-            action: data.action || 'unknown',
+            action: (data.action ?? 'system_change') as PrismaActionType,
             resource: data.resource || 'unknown',
             success: data.success ?? true,
             userId: data.userId,
             sessionId: data.sessionId,
             resourceId: data.resourceId,
-            oldValues: data.oldValues,
-            newValues: data.newValues,
+            oldValues: data.oldValues
+              ? (data.oldValues as Prisma.InputJsonValue)
+              : Prisma.JsonNull,
+            newValues: data.newValues
+              ? (data.newValues as Prisma.InputJsonValue)
+              : Prisma.JsonNull,
             ipAddress: data.ipAddress,
             userAgent: data.userAgent,
             errorMessage: data.errorMessage,
@@ -369,12 +496,15 @@ export class AuthService {
   static async logSystemEvent(data: Partial<SystemLog>): Promise<void> {
     return this.withFallback(
       async () => {
-        await prisma.systemLog.create({
+        const client = getPrismaClient();
+        await client.systemLog.create({
           data: {
             level: data.level || 'info',
             category: data.category || 'general',
             message: data.message || 'Unknown system event',
-            details: data.details,
+            details: data.details
+              ? (data.details as Prisma.InputJsonValue)
+              : Prisma.JsonNull,
             source: data.source,
             stackTrace: data.stackTrace,
             userId: data.userId,
@@ -396,7 +526,8 @@ export class AuthService {
   static async requestPasswordReset(email: string): Promise<void> {
     return this.withFallback(
       async () => {
-        const user = await prisma.user.findUnique({
+        const client = getPrismaClient();
+        const user = await client.user.findUnique({
           where: { email: email.toLowerCase() }
         });
 
@@ -407,7 +538,7 @@ export class AuthService {
 
         const resetToken = signToken({ userId: user.id }, { expiresIn: '1h' });
         
-        await prisma.user.update({
+        await client.user.update({
           where: { id: user.id },
           data: {
             passwordResetToken: resetToken,
@@ -426,10 +557,11 @@ export class AuthService {
     return this.withFallback(
       async () => {
         try {
+          const client = getPrismaClient();
           const decoded = verifyToken<{ userId: string }>(token);
           if (!decoded) throw new Error('Invalid token');
           
-          const user = await prisma.user.findFirst({
+          const user = await client.user.findFirst({
             where: {
               id: decoded.userId,
               passwordResetToken: token,
@@ -441,9 +573,9 @@ export class AuthService {
             throw new Error('Invalid or expired reset token');
           }
 
-      const hashedPassword = await this.hashPassword(newPassword);
+          const hashedPassword = await this.hashPassword(newPassword);
 
-          await prisma.user.update({
+          await client.user.update({
             where: { id: user.id },
             data: {
               password: hashedPassword,

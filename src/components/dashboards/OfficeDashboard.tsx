@@ -470,7 +470,7 @@ export const OfficeDashboard: React.FC = () => {
           from: 'office@farm.com',
           to: 'Dr. Smith Clinic',
           timestamp: addHours(new Date(), -4).toISOString(),
-          status: 'completed',
+          status: 'replied',
           priority: 'medium',
           category: 'vendor',
           snippet: 'Confirmed appointment for tomorrow at 2 PM'
@@ -529,7 +529,7 @@ export const OfficeDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.name]);
 
   useEffect(() => {
     loadDashboardData();

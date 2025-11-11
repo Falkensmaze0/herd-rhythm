@@ -82,7 +82,6 @@ export default async function handler(
       timestamp: new Date().toISOString()
     });
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error('Alerts API error:', err);
     return res.status(500).json({ success: false, message: 'Failed to retrieve alerts' });
   }

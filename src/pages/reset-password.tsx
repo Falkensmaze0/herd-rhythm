@@ -72,8 +72,9 @@ const ResetPasswordPage: React.FC<ResetPasswordProps> = ({ token }) => {
         const data = await res.json();
         setError(data.error || 'An error occurred. Please try again.');
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred. Please try again.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'An error occurred. Please try again.';
+      setError(message);
     } finally {
       setIsLoading(false);
     }

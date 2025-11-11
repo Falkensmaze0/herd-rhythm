@@ -26,11 +26,12 @@ export default async function handler(
       success: true,
       message: 'Password has been reset successfully'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Password reset confirm error:', error);
+    const message = error instanceof Error ? error.message : undefined;
     return res.status(400).json({
       success: false,
-      message: 'Invalid or expired token, or error resetting password'
+      message: message || 'Invalid or expired token, or error resetting password'
     });
   }
 }

@@ -195,7 +195,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ isAuthenticated, isLoading, retur
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const { req, query } = context;
   const sessionToken = context.req.cookies.sessionToken;
-  let returnUrl = query.returnUrl ? String(query.returnUrl) : '/';
+  const returnUrl = query.returnUrl ? String(query.returnUrl) : '/';
 
   if (sessionToken) {
     try {

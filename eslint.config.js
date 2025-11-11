@@ -25,5 +25,16 @@ export default tseslint.config(
       ],
       "@typescript-eslint/no-unused-vars": "off",
     },
+  },
+  {
+    files: [
+      "src/pages/**/*.{ts,tsx}",
+      "src/components/ui/**/*.{ts,tsx}",
+      "src/components/auth/AuthGuard.tsx",
+      "src/contexts/AuthContext.tsx"
+    ],
+    rules: {
+      "react-refresh/only-export-components": "off"
+    }
   }
 );

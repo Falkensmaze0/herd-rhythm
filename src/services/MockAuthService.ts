@@ -327,7 +327,7 @@ export class MockAuthService {
     return rolePermissions[role] || [];
   }
 
-  static hasPermission(user: AuthUser, resource: string, action: string): boolean {
+  static hasPermission(user: AuthUser, resource: string, action: Permission['actions'][number]): boolean {
     if (!user || !user.permissions) return false;
 
     return user.permissions.some(permission => {
@@ -335,7 +335,7 @@ export class MockAuthService {
       if (permission.resource === '*') return true;
       
       // Exact resource match
-      if (permission.resource === resource && permission.actions.includes(action as any)) {
+      if (permission.resource === resource && permission.actions.includes(action)) {
         return true;
       }
 
@@ -354,8 +354,8 @@ export class MockAuthService {
         userId: data.userId,
         sessionId: data.sessionId,
         resourceId: data.resourceId,
-        oldValues: data.oldValues,
-        newValues: data.newValues,
+        oldValues: data.oldValues ?? undefined,
+        newValues: data.newValues ?? undefined,
         ipAddress: data.ipAddress,
         userAgent: data.userAgent,
         errorMessage: data.errorMessage,
@@ -378,7 +378,7 @@ export class MockAuthService {
         level: data.level || 'info',
         category: data.category || 'general',
         message: data.message || 'Unknown system event',
-        details: data.details,
+        details: data.details ?? undefined,
         source: data.source,
         stackTrace: data.stackTrace,
         userId: data.userId,

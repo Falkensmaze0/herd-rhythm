@@ -14,8 +14,8 @@ interface RecentRemindersProps {
 
 interface GroupedReminder {
   task: string;
-  type: string;
-  priority: string;
+  type: Reminder['type'];
+  priority: Reminder['priority'];
   dueDate: string;
   reminderIds: string[];
   cowCount: number;

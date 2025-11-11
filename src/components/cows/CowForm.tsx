@@ -142,7 +142,7 @@ const CowForm: React.FC<CowFormProps> = ({ cow, onSave, onCancel }) => {
             </label>
             <select
               value={formData.status}
-              onChange={(e) => handleChange('status', e.target.value)}
+              onChange={(e) => handleChange('status', e.target.value as CowFormState['status'])}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-vet-blue"
             >
               <option value="active">Active</option>

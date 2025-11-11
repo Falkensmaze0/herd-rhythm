@@ -1,14 +1,16 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { AuthService } from '@/services/AuthService.server';
-import { LoginCredentials } from '@/types';
+import { LoginCredentials, AuthUser } from '@/types';
 
 interface LoginResponse {
   success: boolean;
-  user?: any;
+  user?: SanitizedAuthUser;
   sessionToken?: string;
   message?: string;
   requiresTwoFactor?: boolean;
 }
+
+type SanitizedAuthUser = Omit<AuthUser, 'password'>;
 
 export default async function handler(
   req: NextApiRequest,
@@ -30,10 +32,14 @@ export default async function handler(
     }
 
     // Get client information
-    const ipAddress = req.headers['x-forwarded-for'] as string || 
-                     req.headers['x-real-ip'] as string || 
-                     req.connection.remoteAddress;
-    const userAgent = req.headers['user-agent'];
+    const forwardedFor = req.headers['x-forwarded-for'];
+    const realIp = req.headers['x-real-ip'];
+    const ipAddress =
+      (typeof forwardedFor === 'string' && forwardedFor) ||
+      (typeof realIp === 'string' && realIp) ||
+      req.socket.remoteAddress ||
+      undefined;
+    const userAgent = req.headers['user-agent'] || 'unknown';
 
     // Attempt login
     const { user, sessionToken } = await AuthService.login(
@@ -63,18 +69,19 @@ export default async function handler(
     }
 
     // Remove sensitive data from response
-    const { password, ...userResponse } = user;
+    const { password: _password, ...userResponse } = user;
 
     return res.status(200).json({
       success: true,
       user: userResponse,
       sessionToken
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Login error:', error);
+    const message = error instanceof Error ? error.message : undefined;
     
     // Handle specific error types
-    if (error.message === 'Two-factor authentication required') {
+    if (message === 'Two-factor authentication required') {
       return res.status(200).json({
         success: false,
         requiresTwoFactor: true,
@@ -82,7 +89,7 @@ export default async function handler(
       });
     }
     
-    if (error.message === 'Invalid credentials') {
+    if (message === 'Invalid credentials') {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
@@ -91,7 +98,7 @@ export default async function handler(
     
     return res.status(500).json({
       success: false,
-      message: 'An error occurred during login. Please try again.'
+      message: message || 'An error occurred during login. Please try again.'
     });
   }
 }

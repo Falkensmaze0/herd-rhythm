@@ -42,7 +42,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 //   where: { scheduledFor: { gte: from, lte: to } },
 //   orderBy: { scheduledFor: 'asc' }
 // });
-    let total = 0, completed = 0, cancelled = 0, overdue = 0;
+    const total = 0;
+    const completed = 0;
+    const cancelled = 0;
+    const overdue = 0;
     const timeseries: { x: string, y: number }[] = [];
     const byAssignee: Record<string, { total: number, completed: number, overdue: number }> = {};
     // TODO: The following block aggregated appointment stats by status and assignee.

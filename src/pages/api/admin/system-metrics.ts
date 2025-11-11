@@ -45,11 +45,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // CPU
-    const loads = os.cpus().map((c: any) => c.times.user + c.times.nice + c.times.sys + c.times.irq);
+    const loads = os.cpus().map((cpu) => cpu.times.user + cpu.times.nice + cpu.times.sys + cpu.times.irq);
     // RAM
     const total = os.totalmem(), free = os.freemem(), used = total - free;
     // Net
-    const nics = os.networkInterfaces();
+    const networkInterfaces = Object.fromEntries(
+      Object.entries(os.networkInterfaces()).map(([name, interfaces]) => [
+        name,
+        (interfaces ?? []).map(({ address, family, internal }) => ({
+          address,
+          family,
+          internal,
+        })),
+      ])
+    ) as Record<string, { address: string; family: string; internal: boolean }[]>;
     // Process
     const processInfo = {
       pid: process.pid,
@@ -69,7 +78,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       platform: os.platform(),
       hostname: os.hostname(),
       apiRequestsLast10min: 250, // placeholder
-      network: { interfaces: nics as any },
+      network: { interfaces: networkInterfaces },
       process: processInfo,
       downtimes: mockDowntimes,
       feedbackCount
@@ -77,7 +86,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json({ success: true, data: metrics, timestamp: new Date().toISOString() });
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error('System metrics err:', err);
     return res.status(500).json({ success: false, message: 'Failed to fetch system metrics' });
   }

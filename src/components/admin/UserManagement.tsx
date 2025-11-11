@@ -58,7 +58,7 @@ export function UserManagement() {
     },
   });
 
-  const fetchUsers = async () => {
+  const fetchUsers = React.useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch('/api/admin/users?' + new URLSearchParams({
@@ -83,7 +83,7 @@ export function UserManagement() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchTerm, toast]);
 
   const createUser = async (data: NewUserFormData) => {
     try {
@@ -123,7 +123,7 @@ export function UserManagement() {
 
   React.useEffect(() => {
     fetchUsers();
-  }, [searchTerm]);
+  }, [fetchUsers]);
 
   return (
     <div className="space-y-4">

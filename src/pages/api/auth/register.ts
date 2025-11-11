@@ -1,12 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { AuthService } from '@/services/AuthService.server';
-import { RegisterData } from '@/types';
+import { RegisterData, AuthUser } from '@/types';
 
 interface RegisterResponse {
   success: boolean;
-  user?: any;
+  user?: SanitizedAuthUser;
   message?: string;
 }
+
+type SanitizedAuthUser = Omit<AuthUser, 'password'>;
 
 export default async function handler(
   req: NextApiRequest,
@@ -28,23 +30,24 @@ export default async function handler(
     }
 
     const user = await AuthService.register(data);
-    const { password, ...userResponse } = user;
+    const { password: _password, ...userResponse } = user;
 
     return res.status(201).json({
       success: true,
       user: userResponse,
       message: 'Registration successful',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Register error:', error);
+    const message = error instanceof Error ? error.message : undefined;
 
-    if (error.message && error.message.includes('User already exists')) {
+    if (message && message.includes('User already exists')) {
       return res.status(409).json({ success: false, message: 'User already exists' });
     }
 
     return res.status(500).json({
       success: false,
-      message: 'Registration failed. Please try again.',
+      message: message || 'Registration failed. Please try again.',
     });
   }
 }

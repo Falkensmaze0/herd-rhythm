@@ -5,7 +5,7 @@ export type UserRole = 'admin' | 'manager' | 'doctor' | 'technician' | 'helper' 
 export interface Permission {
   resource: string;
   actions: Array<'create' | 'read' | 'update' | 'delete' | 'admin'>;
-  conditions?: Record<string, any>;
+  conditions?: Record<string, unknown>;
 }
 
 export interface AuthUser extends Omit<User, 'avatar'> {

@@ -5,7 +5,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 0 0% 0;
     --foreground: 224 71.4% 4.1%;
 
     --card: 0 0% 100%;
@@ -46,7 +46,7 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 0 0 0;
     --foreground: 210 40% 98%;
 
     --card: 222.2 84% 4.9%;
@@ -91,8 +91,8 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
-    background-color: hsl(var(--background));
+    @apply 0 0 0 text-foreground font-sans;
+    background-color: 0 0 0;
     color: hsl(var(--foreground));
   }
 }

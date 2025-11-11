@@ -33,7 +33,7 @@ export default async function handler(
       success: true,
       message: 'Successfully logged out'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Logout error:', error);
     
     // Even if there's an error, we should still clear the cookie

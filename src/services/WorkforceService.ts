@@ -3,7 +3,7 @@ import type { SyncMethod, SyncMethodStep, WorkforceRequirements } from '../types
 import { addDays, startOfDay, isSameDay } from 'date-fns';
 import { prisma } from '@/lib/prisma';
 
-const MEDICAL_TASK_TYPES = ['checkup', 'ai', 'injection', 'vaccination', 'pregnancy_check'];
+const MEDICAL_TASK_TYPES: Reminder['type'][] = ['checkup', 'ai', 'injection', 'vaccination', 'pregnancy_check'];
 
 const DEFAULT_MEDICAL_RATIOS = {
   checkup: { doctors: 20, technicians: 0, workers: 10 },
@@ -12,6 +12,26 @@ const DEFAULT_MEDICAL_RATIOS = {
   vaccination: { doctors: 0, technicians: 12, workers: 6 },
   pregnancy_check: { doctors: 15, technicians: 0, workers: 8 }
 } as const;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const parseWorkforceSnapshot = (snapshot: unknown): Record<string, unknown> | null => {
+  if (!snapshot) {
+    return null;
+  }
+
+  if (typeof snapshot === 'string') {
+    try {
+      const parsed = JSON.parse(snapshot);
+      return isRecord(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return isRecord(snapshot) ? snapshot : null;
+};
 
 export interface WorkforceRequirement {
   date: Date;
@@ -39,7 +59,7 @@ export class WorkforceService {
           where: {
             completed: false,
             type: {
-              in: MEDICAL_TASK_TYPES as any // Cast to ReminderType[] for Prisma compatibility
+              in: MEDICAL_TASK_TYPES
             }
           }
         }),
@@ -90,11 +110,7 @@ export class WorkforceService {
         this.remindersByDate.get(dateKey)?.push({
           ...reminder,
           dueDate: reminder.dueDate instanceof Date ? reminder.dueDate.toISOString() : reminder.dueDate,
-          workforceSnapshot: reminder.workforceSnapshot
-            ? typeof reminder.workforceSnapshot === 'string'
-              ? JSON.parse(reminder.workforceSnapshot)
-              : reminder.workforceSnapshot
-            : undefined
+          workforceSnapshot: parseWorkforceSnapshot(reminder.workforceSnapshot)
         });
       });
     } catch (error) {

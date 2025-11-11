@@ -1,6 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { AuthUser, Permission, UserRole, UserPreferences } from '@/types';
-import { AuthService } from './AuthService.server';
+import { AuthUser, UserRole, UserPreferences } from '@/types';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
@@ -23,6 +22,64 @@ export interface UpdateUserData {
   language?: string;
   twoFactorEnabled?: boolean;
 }
+
+type JsonRecord = Record<string, unknown>;
+
+const isJsonRecord = (value: unknown): value is JsonRecord =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const toTheme = (value: unknown): UserPreferences['theme'] => {
+  if (value === 'light' || value === 'dark' || value === 'system') {
+    return value;
+  }
+  return 'system';
+};
+
+const toCowListView = (value: unknown): UserPreferences['defaultViews']['cowList'] =>
+  value === 'table' ? 'table' : 'grid';
+
+const toCalendarView = (value: unknown): UserPreferences['defaultViews']['calendar'] => {
+  if (value === 'week' || value === 'day') {
+    return value;
+  }
+  return 'month';
+};
+
+const toBoolean = (value: unknown, fallback: boolean): boolean =>
+  typeof value === 'boolean' ? value : fallback;
+
+const toStringOr = (value: unknown, fallback: string): string =>
+  typeof value === 'string' ? value : fallback;
+
+const toWidgetList = (value: unknown): string[] =>
+  Array.isArray(value) ? value.map((widget) => String(widget)) : [];
+
+const normalizePreferences = (preferences: Prisma.JsonValue | null): UserPreferences | undefined => {
+  if (!isJsonRecord(preferences)) {
+    return undefined;
+  }
+
+  const notificationsSource = isJsonRecord(preferences.notifications) ? preferences.notifications : {};
+  const dashboardSource = isJsonRecord(preferences.dashboard) ? preferences.dashboard : {};
+  const defaultViewsSource = isJsonRecord(preferences.defaultViews) ? preferences.defaultViews : {};
+
+  return {
+    theme: toTheme(preferences.theme),
+    notifications: {
+      email: toBoolean(notificationsSource.email, true),
+      push: toBoolean(notificationsSource.push, true),
+      sms: toBoolean(notificationsSource.sms, false),
+    },
+    dashboard: {
+      layout: toStringOr(dashboardSource.layout, 'default'),
+      widgets: toWidgetList(dashboardSource.widgets),
+    },
+    defaultViews: {
+      cowList: toCowListView(defaultViewsSource.cowList),
+      calendar: toCalendarView(defaultViewsSource.calendar),
+    },
+  };
+};
 
 export class AdminService {
   static async createUser(data: CreateUserData): Promise<AuthUser> {
@@ -49,22 +106,7 @@ export class AdminService {
       }
     });
 
-    const preferences = user.preferences ? {
-      theme: (user.preferences as any).theme || 'system',
-      notifications: {
-        email: (user.preferences as any).notifications?.email ?? true,
-        push: (user.preferences as any).notifications?.push ?? true,
-        sms: (user.preferences as any).notifications?.sms ?? false,
-      },
-      dashboard: {
-        layout: (user.preferences as any).dashboard?.layout || 'default',
-        widgets: Array.isArray((user.preferences as any).dashboard?.widgets) ? (user.preferences as any).dashboard.widgets.map((w: any) => String(w)) : [],
-      },
-      defaultViews: {
-        cowList: (user.preferences as any).defaultViews?.cowList || 'grid',
-        calendar: (user.preferences as any).defaultViews?.calendar || 'month',
-      },
-    } as UserPreferences : undefined;
+    const preferences = normalizePreferences(user.preferences);
 
     const authUser: AuthUser = {
       ...user,
@@ -94,22 +136,7 @@ export class AdminService {
       }
     });
 
-    const updatedPreferences = updatedUser.preferences ? {
-      theme: (updatedUser.preferences as any).theme || 'system',
-      notifications: {
-        email: (updatedUser.preferences as any).notifications?.email ?? true,
-        push: (updatedUser.preferences as any).notifications?.push ?? true,
-        sms: (updatedUser.preferences as any).notifications?.sms ?? false,
-      },
-      dashboard: {
-        layout: (updatedUser.preferences as any).dashboard?.layout || 'default',
-        widgets: Array.isArray((updatedUser.preferences as any).dashboard?.widgets) ? (updatedUser.preferences as any).dashboard.widgets.map((w: any) => String(w)) : [],
-      },
-      defaultViews: {
-        cowList: (updatedUser.preferences as any).defaultViews?.cowList || 'grid',
-        calendar: (updatedUser.preferences as any).defaultViews?.calendar || 'month',
-      },
-    } as UserPreferences : undefined;
+    const updatedPreferences = normalizePreferences(updatedUser.preferences);
 
     const authUser: AuthUser = {
       ...updatedUser,
@@ -154,22 +181,7 @@ export class AdminService {
 
     const users = await prisma.user.findMany({ where });
     return users.map(user => {
-      const prefs = user.preferences ? {
-        theme: (user.preferences as any).theme || 'system',
-        notifications: {
-          email: (user.preferences as any).notifications?.email ?? true,
-          push: (user.preferences as any).notifications?.push ?? true,
-          sms: (user.preferences as any).notifications?.sms ?? false,
-        },
-        dashboard: {
-          layout: (user.preferences as any).dashboard?.layout || 'default',
-          widgets: Array.isArray((user.preferences as any).dashboard?.widgets) ? (user.preferences as any).dashboard.widgets.map((w: any) => String(w)) : [],
-        },
-        defaultViews: {
-          cowList: (user.preferences as any).defaultViews?.cowList || 'grid',
-          calendar: (user.preferences as any).defaultViews?.calendar || 'month',
-        },
-      } as UserPreferences : undefined;
+      const prefs = normalizePreferences(user.preferences);
 
       return {
         ...user,

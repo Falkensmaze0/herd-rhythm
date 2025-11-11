@@ -102,11 +102,8 @@ function App({ Component, pageProps }: AppProps) {
 
   // Check if this is a special page that needs minimal wrapping
   const errorPages = ["404", "500", "_error"];
-  const isErrorPage = errorPages.includes(
-    (Component as any).displayName || 
-    Component.name || 
-    ""
-  );
+  const componentName = Component.displayName ?? Component.name ?? "";
+  const isErrorPage = errorPages.includes(componentName);
 
   // Wrap error pages with minimal context
   if (isErrorPage) {

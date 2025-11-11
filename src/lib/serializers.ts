@@ -24,23 +24,23 @@ const parseWorkforceSnapshot = (
   value: Prisma.JsonValue | null | undefined,
 ): Reminder['workforceSnapshot'] => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return undefined;
+    return null;
   }
 
   const snapshot = value as Record<string, unknown>;
-  const workers = typeof snapshot.workers === 'number' ? snapshot.workers : undefined;
-  const technicians = typeof snapshot.technicians === 'number' ? snapshot.technicians : undefined;
-  const doctors = typeof snapshot.doctors === 'number' ? snapshot.doctors : undefined;
+  const result: Record<string, unknown> = {};
 
-  if (workers === undefined && technicians === undefined && doctors === undefined) {
-    return undefined;
+  if (typeof snapshot.workers === 'number') {
+    result.workers = snapshot.workers;
+  }
+  if (typeof snapshot.technicians === 'number') {
+    result.technicians = snapshot.technicians;
+  }
+  if (typeof snapshot.doctors === 'number') {
+    result.doctors = snapshot.doctors;
   }
 
-  return {
-    workers,
-    technicians,
-    doctors,
-  };
+  return Object.keys(result).length ? result : null;
 };
 
 const parseWorkforceRequirements = (

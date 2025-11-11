@@ -511,7 +511,7 @@ export const TechnicianDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.name]);
 
   useEffect(() => {
     loadDashboardData();

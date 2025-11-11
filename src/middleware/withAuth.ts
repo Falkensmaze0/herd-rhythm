@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { AuthService } from '@/services/AuthService';
-import { UserRole, AuthUser } from '@/types';
+import { UserRole, AuthUser, Permission } from '@/types';
 
 // Extend NextApiRequest to include user
 declare module 'next' {
@@ -11,7 +11,7 @@ declare module 'next' {
 
 interface AuthOptions {
   requiredRole?: UserRole | UserRole[];
-  requiredPermission?: { resource: string; action: string };
+  requiredPermission?: { resource: string; action: Permission['actions'][number] };
   allowSelfAccess?: boolean; // Allow users to access their own data
 }
 
@@ -124,15 +124,18 @@ export function withAuth(
 
       // Call the actual handler
       return handler(req, res);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Auth middleware error:', error);
+      const { message, stack } = error instanceof Error
+        ? { message: error.message, stack: error.stack }
+        : { message: 'Authentication middleware error', stack: undefined };
       
       // Log the error
       await AuthService.logSystemEvent({
         level: 'error',
         category: 'authentication',
         message: 'Authentication middleware error',
-        details: { error: error.message, stack: error.stack },
+        details: { error: message, stack },
         source: 'withAuth middleware'
       });
       
@@ -162,7 +165,7 @@ export const withTechnicianAuth = (handler: (req: NextApiRequest, res: NextApiRe
 export const withPermission = (
   handler: (req: NextApiRequest, res: NextApiResponse) => Promise<void> | void,
   resource: string,
-  action: string
+  action: Permission['actions'][number]
 ) => withAuth(handler, { requiredPermission: { resource, action } });
 
 export default withAuth;

@@ -26,11 +26,12 @@ export default async function handler(
       success: true,
       message: "If an account exists for this email, a reset link has been sent."
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Password reset request error:', error);
+    const message = error instanceof Error ? error.message : undefined;
     return res.status(500).json({
       success: false,
-      message: 'Failed to process password reset request'
+      message: message || 'Failed to process password reset request'
     });
   }
 }

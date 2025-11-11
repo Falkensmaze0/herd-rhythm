@@ -3,12 +3,18 @@
 // Remove direct imports of Html5Qrcode
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { X, Camera } from 'lucide-react';
-// import { Html5Qrcode } from 'html5-qrcode'; // <-- Remove
+import type { Html5Qrcode } from 'html5-qrcode';
 
 interface QRScanModalProps {
   isOpen: boolean;
   onClose: () => void;
   onScanSuccess: (cowId: string) => void;
+}
+
+type Html5QrcodeConstructor = new (elementId: string, config?: Record<string, unknown>) => Html5Qrcode;
+
+interface Html5QrcodeWindow extends Window {
+  Html5Qrcode?: Html5QrcodeConstructor;
 }
 
 const QRScanModal: React.FC<QRScanModalProps> = ({ isOpen, onClose, onScanSuccess }) => {
@@ -44,7 +50,16 @@ const QRScanModal: React.FC<QRScanModalProps> = ({ isOpen, onClose, onScanSucces
         }
         if (!mounted) return;
         // Use global Html5Qrcode
-        qrRef.current = new (window as any).Html5Qrcode('qr-reader');
+        const html5QrcodeCtor = typeof window !== 'undefined'
+          ? (window as Html5QrcodeWindow).Html5Qrcode
+          : undefined;
+
+        if (!html5QrcodeCtor) {
+          setError('QR scanner library not loaded. Please refresh and try again.');
+          return;
+        }
+
+        qrRef.current = new html5QrcodeCtor('qr-reader');
         await qrRef.current?.start(
           { facingMode: 'environment' },
           {

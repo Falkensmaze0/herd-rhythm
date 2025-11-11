@@ -22,7 +22,7 @@ export interface Reminder {
   syncMethodId: string | null;
   syncStepId: string | null;
   estimatedCowCount: number | null;
-  workforceSnapshot: any | null;
+  workforceSnapshot: Record<string, unknown> | null;
   createdAt: Date;
   updatedAt: Date;
 }

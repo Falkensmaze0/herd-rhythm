@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { AuthUser, UserRole } from '@/types';
+import { AuthUser, UserRole, Permission } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Shield, AlertTriangle, Lock } from 'lucide-react';
 interface AuthGuardProps {
   children: React.ReactNode;
   requiredRole?: UserRole;
-  requiredPermission?: { resource: string; action: string };
+  requiredPermission?: { resource: string; action: Permission['actions'][number] };
   requireAuth?: boolean;
   fallback?: React.ReactNode;
 }
@@ -184,7 +184,7 @@ export const TechnicianGuard: React.FC<{ children: React.ReactNode; fallback?: R
 export const PermissionGuard: React.FC<{
   children: React.ReactNode;
   resource: string;
-  action: string;
+  action: Permission['actions'][number];
   fallback?: React.ReactNode;
 }> = ({ children, resource, action, fallback }) => (
   <AuthGuard requiredPermission={{ resource, action }} fallback={fallback}>

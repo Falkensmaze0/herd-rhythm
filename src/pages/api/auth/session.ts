@@ -1,11 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { AuthService } from '@/services/AuthService.server';
+import { AuthUser } from '@/types';
 
 interface SessionResponse {
   success: boolean;
-  user?: any;
+  user?: SanitizedAuthUser;
   message?: string;
 }
+
+type SanitizedAuthUser = Omit<AuthUser, 'password'>;
 
 export default async function handler(
   req: NextApiRequest,
@@ -27,18 +30,19 @@ export default async function handler(
       });
     }
 
-let user;
+    let user: AuthUser | null;
     try {
       user = await AuthService.validateSession(sessionToken);
-    } catch (validationError: any) {
+    } catch (validationError: unknown) {
       // Clear invalid session cookie
       res.setHeader('Set-Cookie', [
         'sessionToken=; HttpOnly; Secure; SameSite=Strict; Max-Age=0; Path=/'
       ]);
+      const message = validationError instanceof Error ? validationError.message : 'Invalid or expired session';
       
       return res.status(401).json({
         success: false,
-        message: validationError.message || 'Invalid or expired session'
+        message
       });
     }
 
@@ -55,14 +59,15 @@ let user;
     }
 
     // Remove sensitive data from response
-    const { password, ...userResponse } = user;
+    const { password: _password, ...userResponse } = user;
 
     return res.status(200).json({
       success: true,
       user: userResponse
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Session validation error:', error);
+    const message = error instanceof Error ? error.message : undefined;
     
     // Clear potentially corrupted session cookie
     res.setHeader('Set-Cookie', [
@@ -71,7 +76,7 @@ let user;
     
     return res.status(500).json({
       success: false,
-      message: 'Session validation failed'
+      message: message || 'Session validation failed'
     });
   }
 }

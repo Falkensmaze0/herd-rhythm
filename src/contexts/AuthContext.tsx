@@ -5,8 +5,8 @@
  * No direct AuthService/server logic is ever invoked here.
  * Role-based redirects are managed centrally in this provider after login/session change.
  */
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { AuthUser, LoginCredentials, RegisterData, UserRole } from '@/types';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { AuthUser, LoginCredentials, RegisterData, UserRole, UserPreferences, Permission } from '@/types';
 import { AuthService } from '@/services/AuthService';
 import { useToast } from '@/hooks/use-toast';
 import Router from 'next/router';
@@ -21,10 +21,10 @@ interface AuthContextType {
   register: (data: RegisterData) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   confirmPasswordReset: (token: string, newPassword: string) => Promise<void>;
-  hasPermission: (resource: string, action: string) => boolean;
+  hasPermission: (resource: string, action: Permission['actions'][number]) => boolean;
   canAccess: (resource: string) => boolean;
   refreshSession: () => Promise<void>;
-  updateUserPreferences: (preferences: any) => Promise<void>;
+  updateUserPreferences: (preferences: Partial<UserPreferences>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -68,14 +68,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     initializeAuth();
   }, []);
-
-  // Session refresh interval (every 15 minutes)
-  useEffect(() => {
-    if (user) {
-      const interval = setInterval(refreshSession, 15 * 60 * 1000);
-      return () => clearInterval(interval);
-    }
-  }, [user]);
 
   const initializeAuth = async () => {
     try {
@@ -146,7 +138,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       toast({
         title: 'Login Successful',
         description: `Welcome back, ${authUser.name}!`,
-        variant: 'success',
+        variant: 'default',
       });
       
       // Ensure state updates are complete before navigation
@@ -157,25 +149,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (path) {
         window.location.href = path;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login failed:', error);
       setIsLoading(false);
+      const message = getErrorMessage(error);
       
       // Handle specific error types
-      if (error.message === 'Two-factor authentication required') {
-        throw error; // Re-throw to handle 2FA flow
+      if (message === 'Two-factor authentication required') {
+        throw new Error(message); // Re-throw to handle 2FA flow
       }
       
       toast({
         title: 'Login Failed',
-        description: error.message || 'Invalid credentials. Please try again.',
+        description: message || 'Invalid credentials. Please try again.',
         variant: 'destructive',
       });
-      throw error;
+      throw new Error(message);
     }
   };
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       setIsLoading(true);
       const sessionToken = localStorage.getItem('sessionToken');
@@ -196,13 +189,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.',
-        variant: 'success',
+        variant: 'default',
       });
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
       }
     }
-  };
+  }, [toast]);
 
   const register = async (data: RegisterData) => {
     try {
@@ -220,16 +213,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       toast({
         title: 'Registration Successful',
         description: 'Your account has been created. You can now log in.',
-        variant: 'success',
+        variant: 'default',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Registration failed:', error);
+      const message = getErrorMessage(error);
       toast({
         title: 'Registration Failed',
-        description: error.message || 'Failed to create account. Please try again.',
+        description: message || 'Failed to create account. Please try again.',
         variant: 'destructive',
       });
-      throw error;
+      throw new Error(message);
     } finally {
       setIsLoading(false);
     }
@@ -251,16 +245,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       toast({
         title: 'Password Reset Sent',
         description: 'If an account exists with that email, you will receive reset instructions.',
-        variant: 'success',
+        variant: 'default',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Password reset failed:', error);
+      const message = getErrorMessage(error);
       toast({
         title: 'Reset Failed',
-        description: 'Failed to send password reset. Please try again.',
+        description: message || 'Failed to send password reset. Please try again.',
         variant: 'destructive',
       });
-      throw error;
+      throw new Error(message);
     } finally {
       setIsLoading(false);
     }
@@ -284,20 +279,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         description: 'Your password has been reset. Please log in with your new password.',
         variant: 'default',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Password reset confirmation failed:', error);
+      const message = getErrorMessage(error);
       toast({
         title: 'Reset Failed',
-        description: error.message || 'Failed to reset password. Please try again.',
+        description: message || 'Failed to reset password. Please try again.',
         variant: 'destructive',
       });
-      throw error;
+      throw new Error(message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const hasPermission = (resource: string, action: string): boolean => {
+  const hasPermission = (resource: string, action: Permission['actions'][number]): boolean => {
     return user ? AuthService.hasPermission(user, resource, action) : false;
   };
 
@@ -305,7 +301,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return hasPermission(resource, 'read');
   };
 
-  const refreshSession = async () => {
+  const refreshSession = useCallback(async () => {
     try {
       // Validate session with API; logout if invalid
       const response = await fetch('/api/auth/session', {
@@ -326,9 +322,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Session refresh failed:', error);
       await logout();
     }
-  };
+  }, [logout]);
 
-  const updateUserPreferences = async (preferences: any) => {
+  // Session refresh interval (every 15 minutes)
+  useEffect(() => {
+    if (user) {
+      const interval = setInterval(() => {
+        void refreshSession();
+      }, 15 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [user, refreshSession]);
+
+  const updateUserPreferences = async (preferences: Partial<UserPreferences>) => {
     if (!user) return;
     
     try {
@@ -341,9 +347,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         },
         body: JSON.stringify({ preferences }),
       });
-
       if (response.ok) {
-        const updatedUser = await response.json();
+        type UpdatePreferencesResponse = { preferences?: UserPreferences };
+        const updatedUser: UpdatePreferencesResponse = await response.json();
         setUser({ ...user, preferences: updatedUser.preferences });
         
         toast({
@@ -352,7 +358,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           variant: 'default',
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to update preferences:', error);
       toast({
         title: 'Update Failed',
@@ -397,6 +403,16 @@ const getClientIP = async (): Promise<string | undefined> => {
   } catch (error) {
     return undefined;
   }
+};
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return 'An unexpected error occurred.';
 };
 
 const setCookie = (name: string, value: string, days: number) => {
