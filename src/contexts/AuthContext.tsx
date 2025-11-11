@@ -40,6 +40,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const isAuthenticated = !!user;
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.dataset.role = user?.role ?? 'guest';
+  }, [user?.role]);
+
   // Modular user role → landing page route mapping
   const ROLE_HOME_ROUTE: Record<UserRole, string> = {
     admin: '/admin',

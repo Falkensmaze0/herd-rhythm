@@ -24,6 +24,8 @@ npm i
 npm run dev
 ```
 
+Need more detail on structure, scripts, and review expectations? See [AGENTS.md](AGENTS.md) for the full contributor guide.
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).

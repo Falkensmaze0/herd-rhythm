@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { format, addDays, addHours } from 'date-fns';
 import { DashboardSkeleton } from './DashboardSkeleton';
+import { RoleDashboardLayout } from './RoleDashboardLayout';
 
 interface BreedingStatsProps {
   stats: {
@@ -547,49 +548,69 @@ export const TechnicianDashboard: React.FC = () => {
 
   if (loading || !breedingStats || !successRates) {
     return (
-      <DashboardSkeleton
+      <RoleDashboardLayout
+        role="technician"
         title="Technician Dashboard"
-        description="Loading breeding stats and schedules..."
-      />
+        description="Loading breeding stats and synchronization schedules…"
+        actions={
+          <Badge variant="secondary" className="rounded-full bg-purple-200 text-purple-900">
+            Equipment check in progress
+          </Badge>
+        }
+      >
+        <DashboardSkeleton
+          title="Technician Dashboard"
+          description="Loading breeding stats and schedules…"
+        />
+      </RoleDashboardLayout>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Technician Dashboard</h1>
-          <p className="text-gray-600 mt-1">
-            Hello, {user?.name}. Ready for today's breeding procedures?
-          </p>
-        </div>
-        <Badge variant="secondary" className="bg-purple-100 text-purple-800">
-          Equipment Operational
-        </Badge>
-      </div>
+  const highlights = [
+    {
+      label: 'Pending AI',
+      value: breedingStats.pendingAI,
+      hint: `${breedingStats.completedAI} completed`,
+      tone: breedingStats.pendingAI > breedingStats.completedAI ? 'warn' : 'default',
+    },
+    {
+      label: 'Success rate',
+      value: `${breedingStats.successRate}%`,
+      hint: `${breedingStats.avgConceptionRate}% conception avg`,
+      tone: breedingStats.successRate > 85 ? 'positive' : 'default',
+    },
+    {
+      label: 'Upcoming syncs',
+      value: syncEvents.length,
+      hint: 'Scheduled in the next window',
+    },
+  ];
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Breeding Stats - Spans 2 columns */}
+  return (
+    <RoleDashboardLayout
+      role="technician"
+      title="Technician Dashboard"
+      description={`Hello, ${user?.name}. Ready for today's breeding procedures?`}
+      actions={
+        <Badge variant="secondary" className="rounded-full bg-purple-100 text-purple-800">
+          Equipment operational
+        </Badge>
+      }
+      highlights={highlights}
+    >
+      <div className="role-widget-grid technician-widget-grid grid grid-cols-1 gap-6 lg:grid-cols-4">
         <div className="lg:col-span-2">
           <BreedingStatsCard stats={breedingStats} />
         </div>
-
-        {/* Success Rates */}
         <SuccessRatesCard data={successRates} />
-
-        {/* Quick Actions */}
         <QuickActions />
-
-        {/* Sync Calendar - Spans 2 columns */}
         <div className="lg:col-span-2">
           <SyncCalendarCard events={syncEvents} />
         </div>
-
-        {/* AI Procedures - Full width */}
         <div className="lg:col-span-4">
           <AIProceduresCard procedures={aiProcedures} />
         </div>
       </div>
-    </div>
+    </RoleDashboardLayout>
   );
 };

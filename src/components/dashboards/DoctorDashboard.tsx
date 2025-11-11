@@ -36,6 +36,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { fetchWithAuth } from '@/lib/apiClient';
 import { DashboardSkeleton } from './DashboardSkeleton';
+import { RoleDashboardLayout } from './RoleDashboardLayout';
 
 type HealthAnalyticsSummary = {
   window: string;
@@ -133,7 +134,7 @@ const WindowSelector: React.FC<{
   <select
     value={value}
     onChange={(event) => onChange(event.target.value)}
-    className="border rounded px-2 py-1 text-sm bg-white shadow-sm"
+    className="role-select"
   >
     {WINDOW_OPTIONS.map((option) => (
       <option key={option.value} value={option.value}>
@@ -362,33 +363,60 @@ export const DoctorDashboard: React.FC = () => {
   const atRiskAnimals = healthAnalytics?.atRiskAnimals ?? [];
   const windowLabel =
     WINDOW_OPTIONS.find((option) => option.value === windowParam)?.label || windowParam;
+  const complianceRate = complianceSummary?.overall?.complianceRate ?? 0;
+  const highlights = [
+    {
+      label: 'Compliance rate',
+      value: `${complianceRate.toFixed(1)}%`,
+      hint: `${complianceSummary?.overall?.completed ?? 0}/${
+        complianceSummary?.overall?.total ?? 0
+      } protocols`,
+      tone: complianceRate >= 85 ? 'positive' : complianceRate < 70 ? 'warn' : 'default',
+    },
+    {
+      label: 'At-risk animals',
+      value: atRiskAnimals.length,
+      hint: atRiskAnimals.length ? 'Requires immediate review' : 'All clear',
+      tone: atRiskAnimals.length ? 'warn' : 'default',
+    },
+    {
+      label: 'Window',
+      value: windowLabel,
+      hint: 'Rolling cohort analytics',
+    },
+  ];
 
   if (loading) {
     return (
-      <DashboardSkeleton
+      <RoleDashboardLayout
+        role="doctor"
         title="Medical Intelligence Dashboard"
-        description={`Collecting ${windowLabel.toLowerCase()} health telemetry...`}
-      />
+        description={`Collecting ${windowLabel.toLowerCase()} health telemetry…`}
+        actions={<WindowSelector value={windowParam} onChange={setWindowParam} />}
+      >
+        <DashboardSkeleton
+          title="Medical Intelligence Dashboard"
+          description={`Collecting ${windowLabel.toLowerCase()} health telemetry…`}
+        />
+      </RoleDashboardLayout>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Medical Intelligence Dashboard</h1>
-          <p className="mt-1 text-gray-600">
-            Good day, Dr. {user?.name}. Live herd health insights for the last {windowLabel}.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+    <RoleDashboardLayout
+      role="doctor"
+      title="Medical Intelligence Dashboard"
+      description={`Good day, Dr. ${user?.name}. Live herd health insights for the last ${windowLabel}.`}
+      actions={
+        <div className="flex flex-wrap items-center gap-3">
+          <Badge variant="secondary" className="rounded-full bg-emerald-100 text-emerald-700">
             Data refreshed on demand
           </Badge>
           <WindowSelector value={windowParam} onChange={setWindowParam} />
         </div>
-      </div>
-
+      }
+      highlights={highlights}
+    >
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -398,7 +426,7 @@ export const DoctorDashboard: React.FC = () => {
       )}
 
       {summaryMetrics.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="role-widget-grid doctor-widget-grid grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
           {summaryMetrics.map((metric) => (
             <Card key={metric.key}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -416,7 +444,7 @@ export const DoctorDashboard: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      <div className="role-widget-grid doctor-widget-grid grid grid-cols-1 gap-6 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle>Health Event Trends</CardTitle>
@@ -478,7 +506,7 @@ export const DoctorDashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      <div className="role-widget-grid doctor-widget-grid grid grid-cols-1 gap-6 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle>Protocol Compliance</CardTitle>
@@ -588,6 +616,6 @@ export const DoctorDashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </RoleDashboardLayout>
   );
 };

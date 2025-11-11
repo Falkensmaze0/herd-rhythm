@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { format, addDays, addHours, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 import { DashboardSkeleton } from './DashboardSkeleton';
+import { RoleDashboardLayout } from './RoleDashboardLayout';
 
 interface AppointmentProps {
   appointments: {
@@ -565,45 +566,68 @@ export const OfficeDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <DashboardSkeleton
+      <RoleDashboardLayout
+        role="office"
         title="Office Dashboard"
-        description="Gathering appointments and communications..."
-        cardCount={4}
-      />
+        description="Gathering appointments, communications, and tasks…"
+        actions={
+          <Badge variant="secondary" className="rounded-full bg-blue-100 text-blue-800">
+            Office hours
+          </Badge>
+        }
+      >
+        <DashboardSkeleton
+          title="Office Dashboard"
+          description="Gathering appointments and communications…"
+          cardCount={4}
+        />
+      </RoleDashboardLayout>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Office Dashboard</h1>
-          <p className="text-gray-600 mt-1">
-            Hello, {user?.name}. Let's keep everything organized and running smoothly.
-          </p>
-        </div>
-        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-          Office Hours
-        </Badge>
-      </div>
+  const unreadCommunications = communications.filter((comm) => comm.status === 'unread').length;
+  const upcomingAppointments = appointments.length;
+  const highlights = [
+    {
+      label: 'Appointments',
+      value: upcomingAppointments,
+      hint: 'Scheduled this week',
+    },
+    {
+      label: 'Unread communications',
+      value: unreadCommunications,
+      hint: 'Needs response',
+      tone: unreadCommunications > 5 ? 'warn' : 'default',
+    },
+    {
+      label: 'Admin tasks',
+      value: adminTasks.length,
+      hint: `${adminTasks.filter((task) => task.status === 'completed').length} completed`,
+    },
+  ];
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Appointments - Spans 2 columns */}
+  return (
+    <RoleDashboardLayout
+      role="office"
+      title="Office Dashboard"
+      description={`Hello, ${user?.name}. Let's keep everything organized and running smoothly.`}
+      actions={
+        <Badge variant="secondary" className="rounded-full bg-blue-100 text-blue-800">
+          Office hours
+        </Badge>
+      }
+      highlights={highlights}
+    >
+      <div className="role-widget-grid office-widget-grid grid grid-cols-1 gap-6 lg:grid-cols-4">
         <div className="lg:col-span-2">
           <AppointmentsCard appointments={appointments} />
         </div>
-
-        {/* Communications */}
         <CommunicationsCard communications={communications} />
-
-        {/* Quick Actions */}
         <QuickActions />
-
-        {/* Administrative Tasks - Full width */}
         <div className="lg:col-span-4">
           <AdminTasksCard tasks={adminTasks} />
         </div>
       </div>
-    </div>
+    </RoleDashboardLayout>
   );
 };

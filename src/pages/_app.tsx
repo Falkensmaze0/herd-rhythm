@@ -9,7 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import "@/styles/globals.css";
 import React, { createContext, useContext, useEffect } from "react";
 
-type Theme = "light" | "dark";
+type Theme = "light" | "dark" | "contrast";
 interface ThemeContextValue {
   theme: Theme;
   toggleTheme: () => void;
@@ -19,12 +19,13 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 // ThemeProvider logic:
 function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = React.useState<Theme>("light");
+  const [theme, setTheme] = React.useState<Theme>("dark");
   
   // Detect system preference
   useEffect(() => {
     const stored = typeof window !== "undefined" ? localStorage.getItem("theme") : null;
-    if (stored === "dark" || stored === "light") {
+    const storedTheme = stored === "dark" || stored === "light" || stored === "contrast" ? (stored as Theme) : null;
+    if (storedTheme) {
       setTheme(stored as Theme);
     } else if (typeof window !== "undefined") {
       if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
@@ -36,17 +37,25 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Apply theme to html tag
   useEffect(() => {
     const html = document.documentElement;
-    if (theme === "dark") {
-      html.classList.add("dark");
-    } else {
-      html.classList.remove("dark");
-    }
+    html.dataset.theme = theme;
+    html.classList.toggle("dark", theme === "dark");
+    html.classList.toggle("contrast", theme === "contrast");
     localStorage.setItem("theme", theme);
   }, [theme]);
 
   const toggleTheme = React.useCallback(() => {
-    setTheme(t => (t === "dark" ? "light" : "dark"));
+    const order: Theme[] = ["dark", "light", "contrast"];
+    setTheme((current) => {
+      const nextIndex = (order.indexOf(current) + 1) % order.length;
+      return order[nextIndex];
+    });
   }, []);
+
+  const themeLabel = {
+    light: "🌤️ Light",
+    dark: "🌙 Dark",
+    contrast: "⚡ High Contrast",
+  }[theme];
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
@@ -69,7 +78,7 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
         }}
         onClick={toggleTheme}
       >
-        {theme === "dark" ? "🌙 Dark" : "☀️ Light"}
+        {themeLabel}
       </button>
     </ThemeContext.Provider>
   );

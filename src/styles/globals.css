@@ -4,132 +4,472 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 222 47% 11%;
+    --background: 38 46% 97%;
+    --foreground: 218 24% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 220 24% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 220 24% 15%;
 
-    --primary: 226 72% 41%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 152 34% 32%;
+    --primary-foreground: 144 58% 95%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 32 72% 92%;
+    --secondary-foreground: 28 32% 22%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 188 28% 88%;
+    --muted-foreground: 215 16% 32%;
 
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 197 67% 84%;
+    --accent-foreground: 210 32% 22%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 3 76% 46%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 222 84% 55%;
+    --border: 36 30% 87%;
+    --input: 36 30% 87%;
+    --ring: 152 40% 40%;
 
-    --radius: 0.5rem;
+    --radius: 1.25rem;
 
-    --sidebar-background: 210 40% 98%;
-    --sidebar-foreground: 215 20% 35%;
-    --sidebar-primary: 226 72% 41%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 210 40% 96%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 222 84% 55%;
+    --sidebar-background: 36 42% 96%;
+    --sidebar-foreground: 220 16% 28%;
+    --sidebar-primary: 152 34% 32%;
+    --sidebar-primary-foreground: 144 58% 95%;
+    --sidebar-accent: 32 72% 92%;
+    --sidebar-accent-foreground: 28 32% 22%;
+    --sidebar-border: 34 28% 85%;
+    --sidebar-ring: 152 40% 40%;
 
-    /* Added semantic tokens for UI/priority/alert/success */
-    --priority-high: 0 84% 60%;          /* red */
-    --priority-medium: 45 99% 55%;       /* yellow */
-    --priority-low: 142 72% 42%;         /* green */
-    --priority-default: 215 20% 65%;     /* muted gray */
-    --success: 142 72% 42%;              /* green for success */
-    --success-dark: 150 75% 24%;         /* deeper green */
-    --hover: 210 40% 96%;                /* subtle hover for light */
-    --primary-light: 213 97% 85%;        /* pale blue for selection */
-    --primary-dark: 226 72% 41%;         /* dark primary */
+    --surface-1: 36 42% 97%;
+    --surface-2: 195 23% 96%;
+    --surface-3: 170 22% 92%;
+    --hero-stroke: 152 32% 45%;
+    --shadow-soft: 0 24px 60px hsla(34, 62%, 35%, 0.12);
+    --shadow-strong: 0 30px 80px hsla(198, 60%, 30%, 0.22);
+    --widget-shadow: var(--shadow-soft);
+    --widget-shadow-strong: var(--shadow-strong);
   }
-}
 
-@layer base {
+  .dark {
+    --background: 220 26% 6%;
+    --foreground: 210 25% 92%;
+
+    --card: 220 28% 12%;
+    --card-foreground: 210 24% 94%;
+
+    --popover: 220 28% 12%;
+    --popover-foreground: 210 24% 94%;
+
+    --primary: 156 43% 54%;
+    --primary-foreground: 210 27% 10%;
+
+    --secondary: 218 24% 16%;
+    --secondary-foreground: 210 26% 88%;
+
+    --muted: 220 20% 24%;
+    --muted-foreground: 210 16% 80%;
+
+    --accent: 158 32% 26%;
+    --accent-foreground: 156 50% 84%;
+
+    --destructive: 3 75% 52%;
+    --destructive-foreground: 210 32% 96%;
+
+    --border: 218 18% 22%;
+    --input: 218 18% 22%;
+    --ring: 150 40% 56%;
+
+    --sidebar-background: 220 28% 8%;
+    --sidebar-foreground: 210 22% 82%;
+    --sidebar-primary: 156 43% 54%;
+    --sidebar-primary-foreground: 210 27% 10%;
+    --sidebar-accent: 218 26% 14%;
+    --sidebar-accent-foreground: 210 22% 90%;
+    --sidebar-border: 218 18% 22%;
+    --sidebar-ring: 150 40% 56%;
+
+    --surface-1: 220 26% 12%;
+    --surface-2: 220 24% 16%;
+    --surface-3: 220 20% 22%;
+    --hero-stroke: 156 38% 58%;
+    --shadow-soft: 0 30px 70px hsla(210, 65%, 5%, 0.65);
+    --shadow-strong: 0 45px 110px hsla(210, 90%, 4%, 0.85);
+    --widget-shadow: var(--shadow-soft);
+    --widget-shadow-strong: var(--shadow-strong);
+  }
+
+  .contrast {
+    --background: 52 12% 94%;
+    --foreground: 210 40% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 40% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 40% 12%;
+
+    --primary: 234 100% 38%;
+    --primary-foreground: 60 12% 96%;
+
+    --secondary: 60 13% 96%;
+    --secondary-foreground: 210 40% 12%;
+
+    --muted: 60 13% 92%;
+    --muted-foreground: 210 30% 12%;
+
+    --accent: 0 0% 100%;
+    --accent-foreground: 210 40% 12%;
+
+    --destructive: 0 90% 40%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 20% 16%;
+    --input: 210 20% 16%;
+    --ring: 210 20% 16%;
+
+    --surface-1: 0 0% 100%;
+    --surface-2: 0 0% 97%;
+    --surface-3: 0 0% 94%;
+    --shadow-soft: 0 0 0 2px rgba(0, 0, 0, 0.7);
+    --shadow-strong: 0 0 0 3px rgba(0, 0, 0, 0.9);
+    --widget-shadow: var(--shadow-soft);
+    --widget-shadow-strong: var(--shadow-strong);
+  }
+
   * {
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-background text-foreground font-sans;
+    min-height: 100vh;
+    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(circle at 20% 20%, hsl(var(--primary) / 0.12), transparent 45%),
+      radial-gradient(circle at 80% 0%, hsl(198 72% 46% / 0.08), transparent 40%),
+      linear-gradient(180deg, hsl(var(--surface-1)), hsl(var(--surface-2)));
+    color: hsl(var(--foreground));
+    font-feature-settings: "ss01" on, "cv02" on;
+    line-height: 1.5;
+    transition:
+      background-color 200ms ease,
+      color 200ms ease,
+      background-image 300ms ease;
+  }
+
+  .contrast body {
+    background-image: none;
+    font-size: 1.05rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
 @layer components {
+  .auth-shell {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  .auth-shell__layers {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+  }
+
+  .auth-shell__layers::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent, hsl(var(--background)));
+  }
+
+  .role-surface {
+    width: 100%;
+    min-height: 100vh;
+    padding: clamp(1.25rem, 2vw, 2.75rem);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1rem, 1.75vw, 2rem);
+    background-image: var(
+      --role-surface-gradient,
+      radial-gradient(circle at 15% 0%, hsl(var(--primary) / 0.08), transparent 42%),
+      linear-gradient(135deg, hsl(var(--surface-1)), hsl(var(--surface-2)))
+    );
+    background-color: hsl(var(--background));
+  }
+
+  .role-hero {
+    width: 100%;
+    border-radius: calc(var(--radius) * 1.5);
+    padding: clamp(1.5rem, 2vw, 2.75rem);
+    background-image: var(
+      --role-hero-gradient,
+      linear-gradient(135deg, hsl(var(--primary) / 0.16), hsl(var(--primary) / 0.04))
+    );
+    border: 1px solid hsl(var(--border));
+    box-shadow: var(--widget-shadow);
+    backdrop-filter: blur(16px);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .role-hero__heading {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    flex: 1 1 320px;
+  }
+
+  .role-hero__text h1 {
+    font-size: clamp(1.9rem, 3vw, 2.75rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.35rem;
+    color: hsl(var(--foreground));
+  }
+
+  .role-hero__text p {
+    color: hsl(var(--muted-foreground));
+    max-width: 52ch;
+  }
+
+  .role-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .role-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.28em;
+    background-color: hsl(var(--role-chip-bg, var(--secondary) / 0.4));
+    color: hsl(var(--role-chip-text, var(--secondary-foreground)));
+  }
+
+  .role-icon {
+    height: clamp(3rem, 5vw, 3.5rem);
+    width: clamp(3rem, 5vw, 3.5rem);
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: hsl(var(--role-icon-bg, var(--primary) / 0.16));
+    color: hsl(var(--role-icon-color, var(--primary-foreground)));
+    box-shadow: inset 0 0 0 1px hsl(var(--role-icon-border, var(--primary) / 0.4));
+  }
+
+  .role-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: clamp(0.85rem, 1.5vw, 1.5rem);
+  }
+
+  .role-meta-card {
+    border-radius: calc(var(--radius) * 1.1);
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--surface-1));
+    box-shadow: var(--widget-shadow);
+    padding: 1rem 1.25rem;
+  }
+
+  .role-meta-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+    margin-bottom: 0.2rem;
+  }
+
+  .role-meta-value {
+    font-size: clamp(1.35rem, 2.5vw, 2.15rem);
+    font-weight: 600;
+    line-height: 1.1;
+    color: hsl(var(--foreground));
+  }
+
+  .role-meta-hint {
+    margin-top: 0.35rem;
+    font-size: 0.85rem;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .role-meta-card[data-tone='positive'] .role-meta-value {
+    color: #15803d;
+  }
+
+  .role-meta-card[data-tone='warn'] .role-meta-value {
+    color: #b45309;
+  }
+
+  .role-content {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1rem, 1.5vw, 1.75rem);
+  }
+
+  .role-grid {
+    display: grid;
+    gap: clamp(1rem, 1.5vw, 1.75rem);
+  }
+
+  .role-card {
+    border-radius: calc(var(--radius) * 1.1);
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--surface-1));
+    box-shadow: var(--widget-shadow);
+    transition: transform 200ms ease, box-shadow 200ms ease;
+  }
+
+  .role-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--widget-shadow-strong);
+  }
+
+  .role-button {
+    border-radius: 999px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .role-select {
+    border-radius: 999px;
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--surface-1));
+    padding: 0.4rem 1.25rem;
+    font-size: 0.9rem;
+    color: hsl(var(--foreground));
+    box-shadow: inset 0 0 0 1px hsl(var(--border) / 0.4);
+  }
+
   .vet-card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200;
+    @apply rounded-2xl border border-white/30 bg-white/80 p-6 shadow-lg shadow-gray-200/40 backdrop-blur;
   }
 
   .vet-button-primary {
-    @apply bg-vet-blue text-white px-4 py-2 rounded-md hover:bg-vet-blue-light transition-colors duration-200 font-medium;
+    @apply bg-emerald-600 text-white px-5 py-2.5 rounded-full hover:bg-emerald-500 transition-colors duration-200 font-semibold shadow-md shadow-emerald-500/30;
   }
 
   .vet-button-secondary {
-    @apply bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors duration-200 font-medium;
+    @apply bg-slate-100 text-slate-700 px-5 py-2.5 rounded-full hover:bg-slate-200 transition-colors duration-200 font-semibold;
   }
-}
 
+  @media (max-width: 768px) {
+    .role-surface {
+      padding: 1.5rem 1rem 2.5rem;
+    }
 
-/* Dark mode color tokens */
-.dark {
-  --background: 222 39% 8%;                /* deep navy/slate, soothing, not harsh */
-  --foreground: 210 33% 92%;               /* soft near-white for text */
+    .role-hero {
+      flex-direction: column;
+      align-items: flex-start;
+    }
 
-  --card: 222 33% 12%;                     /* slightly lighter than background */
-  --card-foreground: 210 33% 92%;
+    .role-hero__actions {
+      width: 100%;
+      justify-content: flex-start;
+    }
 
-  --popover: 222 33% 12%;
-  --popover-foreground: 210 33% 92%;
+    .role-meta-grid {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+  }
 
-  --primary: 222 71% 55%;                  /* soft blue as primary accent */
-  --primary-foreground: 210 33% 96%;
+  .role-surface[data-role-surface='admin'] {
+    --role-surface-gradient:
+      radial-gradient(circle at 12% 0%, hsla(156, 52%, 62%, 0.25), transparent 45%),
+      linear-gradient(135deg, hsl(var(--surface-1)), hsl(var(--surface-2)));
+    --role-hero-gradient: linear-gradient(130deg, hsla(156, 62%, 40%, 0.25), hsla(196, 72%, 46%, 0.08));
+    --role-chip-bg: 156 62% 30% / 0.2;
+    --role-chip-text: 156 46% 20%;
+    --role-icon-bg: 156 62% 38% / 0.25;
+    --role-icon-color: 152 60% 48%;
+  }
 
-  --secondary: 220 28% 16%;                /* muted, lighter dark */
-  --secondary-foreground: 214 19% 78%;
+  .role-surface[data-role-surface='manager'] {
+    --role-surface-gradient:
+      radial-gradient(circle at 10% 20%, hsla(40, 74%, 80%, 0.35), transparent 45%),
+      radial-gradient(circle at 80% 0%, hsla(156, 62%, 78%, 0.2), transparent 45%),
+      linear-gradient(180deg, hsl(var(--surface-1)), hsl(var(--surface-3)));
+    --role-hero-gradient: linear-gradient(130deg, hsla(40, 78%, 60%, 0.22), hsla(156, 42%, 52%, 0.08));
+    --role-chip-bg: 40 80% 60% / 0.18;
+    --role-chip-text: 32 72% 28%;
+    --role-icon-bg: 40 82% 58% / 0.25;
+    --role-icon-color: 28 80% 40%;
+  }
 
-  --muted: 220 28% 16%;
-  --muted-foreground: 215 16% 62%;
+  .role-surface[data-role-surface='doctor'] {
+    --role-surface-gradient:
+      radial-gradient(circle at 5% 5%, hsla(184, 65%, 80%, 0.3), transparent 45%),
+      linear-gradient(120deg, hsl(var(--surface-1)), hsl(var(--surface-2)));
+    --role-hero-gradient: linear-gradient(135deg, hsla(188, 70%, 55%, 0.2), hsla(197, 80%, 75%, 0.08));
+    --role-chip-bg: 188 65% 40% / 0.18;
+    --role-chip-text: 188 50% 28%;
+    --role-icon-bg: 188 68% 50% / 0.25;
+    --role-icon-color: 192 80% 38%;
+  }
 
-  --accent: 220 28% 20%;                   /* accent, slightly blue-gray */
-  --accent-foreground: 210 33% 92%;
+  .role-surface[data-role-surface='technician'] {
+    --role-surface-gradient:
+      radial-gradient(circle at 0% 0%, hsla(261, 73%, 35%, 0.45), transparent 45%),
+      radial-gradient(circle at 100% 0%, hsla(220, 75%, 40%, 0.35), transparent 35%),
+      linear-gradient(135deg, hsl(var(--surface-1)), hsl(var(--surface-3)));
+    --role-hero-gradient: linear-gradient(130deg, hsla(261, 65%, 42%, 0.3), hsla(222, 64%, 44%, 0.18));
+    --role-chip-bg: 261 73% 38% / 0.25;
+    --role-chip-text: 220 20% 92%;
+    --role-icon-bg: 220 70% 40% / 0.3;
+    --role-icon-color: 220 70% 75%;
+  }
 
-  --destructive: 0 62% 50%;                /* soft red, not harsh */
-  --destructive-foreground: 210 33% 96%;
+  .role-surface[data-role-surface='helper'] {
+    --role-surface-gradient:
+      radial-gradient(circle at 10% 20%, hsla(140, 60%, 75%, 0.25), transparent 45%),
+      radial-gradient(circle at 90% 0%, hsla(35, 100%, 85%, 0.18), transparent 40%),
+      linear-gradient(180deg, hsl(var(--surface-1)), hsl(var(--surface-3)));
+    --role-hero-gradient: linear-gradient(135deg, hsla(142, 55%, 48%, 0.25), hsla(48, 96%, 70%, 0.12));
+    --role-chip-bg: 142 55% 45% / 0.22;
+    --role-chip-text: 142 45% 18%;
+    --role-icon-bg: 142 65% 48% / 0.25;
+    --role-icon-color: 48 96% 50%;
+  }
 
-  --border: 220 27% 18%;                   /* subtle border against dark background */
-  --input: 220 27% 18%;
-  --ring: 217 92% 76%;                     /* faint blue ring for focus */
-
-  --radius: 0.5rem;
-
-  --sidebar-background: 222 39% 6%;
-  --sidebar-foreground: 217 19% 76%;
-  --sidebar-primary: 222 71% 55%;
-  --sidebar-primary-foreground: 210 33% 96%;
-  --sidebar-accent: 220 28% 16%;
-  --sidebar-accent-foreground: 210 33% 92%;
-  --sidebar-border: 220 27% 18%;
-  --sidebar-ring: 217 92% 76%;
-
-  /* Added semantic tokens for UI/priority/alert/success (DARK) */
-  --priority-high: 0 72% 50%;          /* dark red */
-  --priority-medium: 46 86% 54%;       /* muted yellow */
-  --priority-low: 154 60% 45%;         /* gentle green */
-  --priority-default: 215 16% 62%;     /* muted gray */
-  --success: 154 60% 45%;              /* green for success */
-  --success-dark: 153 81% 29%;         /* deep night green */
-  --hover: 222 28% 14%;                /* subtle hover for dark */
-  --primary-light: 217 92% 76%;        /* blue for selection */
-  --primary-dark: 222 71% 55%;         /* deep brand blue */
+  .role-surface[data-role-surface='office'] {
+    --role-surface-gradient:
+      radial-gradient(circle at 70% 0%, hsla(201, 74%, 85%, 0.2), transparent 45%),
+      linear-gradient(135deg, hsl(var(--surface-1)), hsl(var(--surface-2)));
+    --role-hero-gradient: linear-gradient(120deg, hsla(204, 70%, 70%, 0.18), hsla(210, 65%, 95%, 0.08));
+    --role-chip-bg: 204 60% 60% / 0.2;
+    --role-chip-text: 204 50% 25%;
+    --role-icon-bg: 204 60% 58% / 0.2;
+    --role-icon-color: 204 70% 40%;
+  }
 }

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { format, addHours, startOfDay } from 'date-fns';
 import { DashboardSkeleton } from './DashboardSkeleton';
+import { RoleDashboardLayout } from './RoleDashboardLayout';
 
 interface DailyTasksProps {
   tasks: {
@@ -534,45 +535,70 @@ export const HelperDashboard: React.FC = () => {
 
   if (loading || !cowStatus) {
     return (
-      <DashboardSkeleton
+      <RoleDashboardLayout
+        role="helper"
         title="Helper Dashboard"
-        description="Syncing shift tasks and herd vitals..."
-        cardCount={4}
-      />
+        description="Syncing shift tasks and herd vitals…"
+        actions={
+          <Badge variant="secondary" className="rounded-full bg-green-100 text-green-800">
+            On duty
+          </Badge>
+        }
+      >
+        <DashboardSkeleton
+          title="Helper Dashboard"
+          description="Syncing shift tasks and herd vitals…"
+          cardCount={4}
+        />
+      </RoleDashboardLayout>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Helper Dashboard</h1>
-          <p className="text-gray-600 mt-1">
-            Good job, {user?.name}! Keep up the great work taking care of our cows.
-          </p>
-        </div>
-        <Badge variant="secondary" className="bg-green-100 text-green-800">
-          On Duty
-        </Badge>
-      </div>
+  const completedTasks = tasks.filter((task) => task.status === 'completed').length;
+  const pendingTasks = tasks.length - completedTasks;
+  const feedingCoverage = Math.round((cowStatus.fedCows / cowStatus.totalCows) * 100);
+  const highlights = [
+    {
+      label: 'Tasks today',
+      value: tasks.length,
+      hint: `${completedTasks} done • ${pendingTasks} remaining`,
+    },
+    {
+      label: 'Feeding coverage',
+      value: `${feedingCoverage}%`,
+      hint: `${cowStatus.fedCows}/${cowStatus.totalCows} cows fed`,
+      tone: feedingCoverage === 100 ? 'positive' : 'warn',
+    },
+    {
+      label: 'Water status',
+      value: cowStatus.waterStatus,
+      hint: `Env: ${cowStatus.environmentStatus}`,
+      tone: cowStatus.waterStatus === 'good' ? 'positive' : 'warn',
+    },
+  ];
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Daily Tasks - Spans 2 columns */}
+  return (
+    <RoleDashboardLayout
+      role="helper"
+      title="Helper Dashboard"
+      description={`Good job, ${user?.name}! Keep up the great work taking care of our cows.`}
+      actions={
+        <Badge variant="secondary" className="rounded-full bg-green-100 text-green-800">
+          On duty
+        </Badge>
+      }
+      highlights={highlights}
+    >
+      <div className="role-widget-grid helper-widget-grid grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <DailyTasksCard tasks={tasks} />
         </div>
-
-        {/* Quick Actions */}
         <QuickActions />
-
-        {/* Cow Status */}
         <CowStatusCard status={cowStatus} />
-
-        {/* Work Log - Spans 2 columns */}
         <div className="lg:col-span-2">
           <WorkLogCard logs={workLog} />
         </div>
       </div>
-    </div>
+    </RoleDashboardLayout>
   );
 };

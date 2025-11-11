@@ -20,6 +20,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { getRoleConfig } from '@/config/roleConfig';
 import WorkforceForecastChart from '@/components/dashboards/manager/WorkforceForecastChart';
+import { RoleDashboardLayout } from './RoleDashboardLayout';
+import { DashboardSkeleton } from './DashboardSkeleton';
 
 import { Reminder, Cow, SyncMethod, User } from '@/types';
 import type { ManagerAnalytics } from '@/types/manager';
@@ -157,8 +159,8 @@ export const ManagerDashboard: React.FC = () => {
     <select
       value={windowParam}
       onChange={e => setWindowParam(e.target.value)}
-      className="border rounded px-2 py-1 text-sm bg-white ml-2"
-      style={{ minWidth: 90 }}
+      className="role-select ml-2"
+      style={{ minWidth: 110 }}
     >
       {windowOptions.map(opt => (
         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -169,14 +171,14 @@ export const ManagerDashboard: React.FC = () => {
   // --- Loading State ---
   if (loading || !analyticsData) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Manager Dashboard</h1>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-64 bg-gray-200 animate-pulse rounded-lg" />
-          ))}
-        </div>
-      </div>
+      <RoleDashboardLayout
+        role="manager"
+        title="Manager Command Surface"
+        description="Synchronizing labor, reminders, and herd analytics."
+        actions={<AnalyticsWindowSelector />}
+      >
+        <DashboardSkeleton />
+      </RoleDashboardLayout>
     );
   }
 
@@ -201,51 +203,70 @@ export const ManagerDashboard: React.FC = () => {
     );
   }
 
+  const windowLabel =
+    windowOptions.find((opt) => opt.value === windowParam)?.label ?? windowParam;
+  const activeReminders = reminders.filter((reminder) => !reminder.completed).length;
+  const highlights = [
+    {
+      label: 'Active reminders',
+      value: activeReminders,
+      hint: `${todaysReminders.length} due today`,
+      tone: activeReminders > 12 ? 'warn' : 'default',
+    },
+    {
+      label: 'Analytics window',
+      value: windowLabel,
+      hint: 'Rolling aggregation',
+    },
+    {
+      label: 'Sync methods',
+      value: syncMethods.length,
+      hint: 'Connected protocols',
+      tone: 'positive',
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
-          <p className="text-gray-600 mt-1">Welcome back, {user?.name}. Operational analytics below.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="bg-blue-100 text-blue-800">Farm Operations Active</Badge>
+    <RoleDashboardLayout
+      role="manager"
+      title="Manager Command Surface"
+      description={`Welcome back, ${user?.name ?? 'team'}. Workforce, reminders, and herd vitals in one place.`}
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary" className="rounded-full bg-amber-100 text-amber-700">
+            Farm operations active
+          </Badge>
           <AnalyticsWindowSelector />
         </div>
-      </div>
-
-      {/* KPI Bar */}
-      <DashboardStats analytics={{
-        totalCows: analyticsData.totalCows,
-        activeReminders: analyticsData.activeReminders,
-        completedSyncs: analyticsData.completedSyncs,
-        pregnancyRate: analyticsData.pregnancyRate
-      }} />
+      }
+      highlights={highlights}
+    >
+      <DashboardStats
+        analytics={{
+          totalCows: analyticsData.totalCows,
+          activeReminders: analyticsData.activeReminders,
+          completedSyncs: analyticsData.completedSyncs,
+          pregnancyRate: analyticsData.pregnancyRate,
+        }}
+      />
 
       <Separator />
 
-      {/* Workforce Forecast Graph (NEW WIDGET) */}
-      <div className="mb-8">
+      <div className="role-grid mb-8">
         <WorkforceForecastChart forecast={analyticsData.workforceForecast || []} />
       </div>
 
-      {/* Recent Reminders with modal wiring */}
       <RecentReminders
         reminders={todaysReminders}
         cows={cows}
         syncMethods={syncMethods}
         onCompleteReminder={canCompleteReminders ? handleCompleteReminder : () => {}}
         className="mb-6"
-        // Modal integration: Clicking group is wired via override below
-        // add prop if RecentReminders supports it, or hack in effect with DOM/forwardRef at need
       />
-      {/* Modal for reminder group details */}
+
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
         {modalDetails}
       </Dialog>
-
-      {/* Custom manager widgets could go here, using analyticsData for charts etc. */}
-      {/* ...left as a further integration step, using CostBreakdownChart etc... */}
-    </div>
+    </RoleDashboardLayout>
   );
 };
