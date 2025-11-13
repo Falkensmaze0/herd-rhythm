@@ -1,14 +1,18 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+'use client';
+
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, LayoutDashboard, Layers, Settings2, Sparkles } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { RoleDashboardLayout } from '@/components/dashboards/RoleDashboardLayout';
+import type { Highlight } from '@/components/dashboards/RoleDashboardLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
+import { useUserSettings } from '@/hooks/useUserSettings';
 import { ROLE_SETTINGS } from '@/data/roleSettings';
 import { UserRole } from '@/types';
 import { cn } from '@/lib/utils';
@@ -104,6 +108,7 @@ interface RoleSettingsViewProps {
 export const RoleSettingsView = ({ role }: RoleSettingsViewProps) => {
   const { user } = useAuth();
   const config = ROLE_SETTINGS[role];
+  const { settings, updateSettings, isUpdating } = useUserSettings();
 
   const initialPreset = useMemo(
     () => config.layoutPresets.find((preset) => preset.recommended)?.id ?? config.layoutPresets[0]?.id,
@@ -111,17 +116,55 @@ export const RoleSettingsView = ({ role }: RoleSettingsViewProps) => {
   );
 
   const [selectedPreset, setSelectedPreset] = useState(initialPreset);
-  const [widgetState, setWidgetState] = useState<Record<string, boolean>>(() =>
-    config.widgetControls.reduce<Record<string, boolean>>((state, widget) => {
-      state[widget.id] =
-        widget.required || widget.defaultEnabled === undefined ? true : widget.defaultEnabled;
-      return state;
-    }, {})
+  const defaultWidgetState = useMemo(
+    () =>
+      config.widgetControls.reduce<Record<string, boolean>>((state, widget) => {
+        state[widget.id] =
+          widget.required || widget.defaultEnabled === undefined ? true : Boolean(widget.defaultEnabled);
+        return state;
+      }, {}),
+    [config.widgetControls]
   );
+  const remoteWidgetState = useMemo(() => {
+    if (!settings?.widgetPreferences) {
+      return defaultWidgetState;
+    }
+    return Object.entries(settings.widgetPreferences).reduce<Record<string, boolean>>((state, [id, pref]) => {
+      if (typeof pref?.enabled === 'boolean') {
+        state[id] = pref.enabled;
+      }
+      return state;
+    }, { ...defaultWidgetState });
+  }, [defaultWidgetState, settings?.widgetPreferences]);
+  const [widgetState, setWidgetState] = useState<Record<string, boolean>>(remoteWidgetState);
   const [collapsedSections, setCollapsedSections] = useState<Record<SectionId, boolean>>(
     getDefaultCollapsedState
   );
   const [collapseHydrated, setCollapseHydrated] = useState(false);
+  const availablePresetIds = useMemo(
+    () => new Set(config.layoutPresets.map((preset) => preset.id)),
+    [config.layoutPresets]
+  );
+
+  useEffect(() => {
+    if (settings?.layoutPreset && availablePresetIds.has(settings.layoutPreset)) {
+      setSelectedPreset(settings.layoutPreset);
+      return;
+    }
+    setSelectedPreset(initialPreset);
+  }, [settings?.layoutPreset, availablePresetIds, initialPreset]);
+
+  const handlePresetSelect = useCallback(
+    async (presetId: string) => {
+      setSelectedPreset(presetId);
+      try {
+        await updateSettings({ layoutPreset: presetId }, { silent: true });
+      } catch (error) {
+        console.error('Failed to persist layout preset', error);
+      }
+    },
+    [updateSettings]
+  );
 
   const collapseStorageKey = `role-settings-collapsed:${role}`;
 
@@ -164,7 +207,7 @@ export const RoleSettingsView = ({ role }: RoleSettingsViewProps) => {
   const enabledWidgets = Object.values(widgetState).filter(Boolean).length;
   const activeAutomations = config.automationRules.filter((rule) => rule.status === 'active').length;
 
-  const highlights = [
+  const highlights: Highlight[] = [
     {
       label: 'Active widgets',
       value: `${enabledWidgets}/${config.widgetControls.length}`,
@@ -184,9 +227,27 @@ export const RoleSettingsView = ({ role }: RoleSettingsViewProps) => {
     },
   ];
 
-  const handleWidgetToggle = (id: string, nextValue: boolean) => {
-    setWidgetState((prev) => ({ ...prev, [id]: nextValue }));
-  };
+  useEffect(() => {
+    setWidgetState(remoteWidgetState);
+  }, [remoteWidgetState]);
+
+  const handleWidgetToggle = useCallback(
+    (id: string, nextValue: boolean, scope: string) => {
+      setWidgetState((prev) => ({ ...prev, [id]: nextValue }));
+      void updateSettings(
+        {
+          widgetPreferences: {
+            [id]: {
+              enabled: nextValue,
+              scope,
+            },
+          },
+        },
+        { silent: true }
+      );
+    },
+    [updateSettings]
+  );
 
   const handleSectionToggle = (sectionId: SectionId) => {
     setCollapsedSections((prev) => ({ ...prev, [sectionId]: !prev[sectionId] }));
@@ -209,10 +270,15 @@ export const RoleSettingsView = ({ role }: RoleSettingsViewProps) => {
               Back to dashboard
             </Link>
           </Button>
-          <Button size="sm" className="gap-1.5">
-            <Sparkles className="h-4 w-4" />
-            Apply preset
-          </Button>
+          <Badge
+            variant="secondary"
+            className={cn(
+              'text-[0.65rem] uppercase tracking-widest',
+              isUpdating ? 'text-primary' : 'text-muted-foreground'
+            )}
+          >
+            {isUpdating ? 'Saving…' : 'Auto-save on'}
+          </Badge>
         </div>
       }
       highlights={highlights}
@@ -239,7 +305,7 @@ export const RoleSettingsView = ({ role }: RoleSettingsViewProps) => {
                         ? 'border-primary/60 bg-primary/5 shadow-sm ring-1 ring-primary/40'
                         : 'border-border/70 hover:border-primary/40 hover:bg-muted/30'
                     )}
-                    onClick={() => setSelectedPreset(preset.id)}
+                    onClick={() => handlePresetSelect(preset.id)}
                     type="button"
                   >
                     <div className="flex items-start justify-between gap-4">
@@ -311,7 +377,7 @@ export const RoleSettingsView = ({ role }: RoleSettingsViewProps) => {
                     <Switch
                       disabled={widget.required}
                       checked={enabled}
-                      onCheckedChange={(checked) => handleWidgetToggle(widget.id, checked)}
+                      onCheckedChange={(checked) => handleWidgetToggle(widget.id, checked, widget.scope)}
                       aria-label={`Toggle ${widget.label}`}
                     />
                   </div>

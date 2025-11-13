@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +25,7 @@ import {
 import { format, addDays, addHours, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 import { DashboardSkeleton } from './DashboardSkeleton';
 import { RoleDashboardLayout } from './RoleDashboardLayout';
+import type { Highlight } from './RoleDashboardLayout';
 
 interface AppointmentProps {
   appointments: {
@@ -587,7 +590,7 @@ export const OfficeDashboard: React.FC = () => {
 
   const unreadCommunications = communications.filter((comm) => comm.status === 'unread').length;
   const upcomingAppointments = appointments.length;
-  const highlights = [
+  const highlights: Highlight[] = [
     {
       label: 'Appointments',
       value: upcomingAppointments,

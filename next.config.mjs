@@ -1,9 +1,22 @@
+const configureClientDevBundles = (config) => {
+  config.optimization = {
+    ...config.optimization,
+    runtimeChunk: 'single',
+    splitChunks: {
+      chunks: 'all',
+    },
+  };
+
+  return config;
+};
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
     instrumentationHook: true,
   },
   reactStrictMode: true,
+  productionBrowserSourceMaps: true,
   env: {
     USE_MOCK_AUTH: process.env.USE_MOCK_AUTH,
     JWT_SECRET: process.env.JWT_SECRET,
@@ -42,15 +55,8 @@ const nextConfig = {
   },
   webpack: (config, { dev, isServer }) => {
     if (!isServer && dev) {
-      config.optimization = {
-        ...config.optimization,
-        runtimeChunk: 'single',
-        splitChunks: {
-          chunks: 'all',
-        },
-      };
-      // Add source maps for development
-      config.devtool = 'source-map';
+      configureClientDevBundles(config);
+      // Rely on Next.js default devtool (eval-source-map) to avoid performance regressions.
     }
     return config;
   },

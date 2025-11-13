@@ -1,3 +1,5 @@
+'use client';
+
 // Refactored: ManagerDashboard now uses modular "blocks" (DashboardStats, RecentReminders, ReminderDetails),
 // role-based rendering via AuthContext and roleConfig, and modern modal/dialog state.
 //
@@ -21,6 +23,7 @@ import { Separator } from '@/components/ui/separator';
 import { getRoleConfig } from '@/config/roleConfig';
 import WorkforceForecastChart from '@/components/dashboards/manager/WorkforceForecastChart';
 import { RoleDashboardLayout } from './RoleDashboardLayout';
+import type { Highlight } from './RoleDashboardLayout';
 import { DashboardSkeleton } from './DashboardSkeleton';
 
 import { Reminder, Cow, SyncMethod, User } from '@/types';
@@ -206,7 +209,7 @@ export const ManagerDashboard: React.FC = () => {
   const windowLabel =
     windowOptions.find((opt) => opt.value === windowParam)?.label ?? windowParam;
   const activeReminders = reminders.filter((reminder) => !reminder.completed).length;
-  const highlights = [
+  const highlights: Highlight[] = [
     {
       label: 'Active reminders',
       value: activeReminders,

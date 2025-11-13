@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,6 +39,7 @@ import { cn } from '@/lib/utils';
 import { fetchWithAuth } from '@/lib/apiClient';
 import { DashboardSkeleton } from './DashboardSkeleton';
 import { RoleDashboardLayout } from './RoleDashboardLayout';
+import type { Highlight } from './RoleDashboardLayout';
 
 type HealthAnalyticsSummary = {
   window: string;
@@ -127,23 +130,6 @@ const getStatusBadgeClass = (status: string) => {
   return 'border-slate-200 text-slate-600 bg-slate-50';
 };
 
-const WindowSelector: React.FC<{
-  value: string;
-  onChange: (value: string) => void;
-}> = ({ value, onChange }) => (
-  <select
-    value={value}
-    onChange={(event) => onChange(event.target.value)}
-    className="role-select"
-  >
-    {WINDOW_OPTIONS.map((option) => (
-      <option key={option.value} value={option.value}>
-        {option.label}
-      </option>
-    ))}
-  </select>
-);
-
 const QuickActions: React.FC = () => (
   <Card>
     <CardHeader>
@@ -178,7 +164,7 @@ export const DoctorDashboard: React.FC = () => {
   const [complianceSummary, setComplianceSummary] = useState<ProtocolComplianceSummary | null>(
     null
   );
-  const [windowParam, setWindowParam] = useState('30d');
+  const [windowParam] = useState('30d');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -364,7 +350,7 @@ export const DoctorDashboard: React.FC = () => {
   const windowLabel =
     WINDOW_OPTIONS.find((option) => option.value === windowParam)?.label || windowParam;
   const complianceRate = complianceSummary?.overall?.complianceRate ?? 0;
-  const highlights = [
+  const highlights: Highlight[] = [
     {
       label: 'Compliance rate',
       value: `${complianceRate.toFixed(1)}%`,
@@ -383,6 +369,7 @@ export const DoctorDashboard: React.FC = () => {
       label: 'Window',
       value: windowLabel,
       hint: 'Rolling cohort analytics',
+      className: 'role-select',
     },
   ];
 
@@ -392,7 +379,6 @@ export const DoctorDashboard: React.FC = () => {
         role="doctor"
         title="Medical Intelligence Dashboard"
         description={`Collecting ${windowLabel.toLowerCase()} health telemetry…`}
-        actions={<WindowSelector value={windowParam} onChange={setWindowParam} />}
       >
         <DashboardSkeleton
           title="Medical Intelligence Dashboard"
@@ -407,14 +393,6 @@ export const DoctorDashboard: React.FC = () => {
       role="doctor"
       title="Medical Intelligence Dashboard"
       description={`Good day, Dr. ${user?.name}. Live herd health insights for the last ${windowLabel}.`}
-      actions={
-        <div className="flex flex-wrap items-center gap-3">
-          <Badge variant="secondary" className="rounded-full bg-emerald-100 text-emerald-700">
-            Data refreshed on demand
-          </Badge>
-          <WindowSelector value={windowParam} onChange={setWindowParam} />
-        </div>
-      }
       highlights={highlights}
     >
       {error && (

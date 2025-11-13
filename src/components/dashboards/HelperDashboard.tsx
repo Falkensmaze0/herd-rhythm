@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,8 +23,10 @@ import {
   Sparkles
 } from 'lucide-react';
 import { format, addHours, startOfDay } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { DashboardSkeleton } from './DashboardSkeleton';
 import { RoleDashboardLayout } from './RoleDashboardLayout';
+import type { Highlight } from './RoleDashboardLayout';
 
 interface DailyTasksProps {
   tasks: {
@@ -60,21 +64,44 @@ const DailyTasksCard: React.FC<DailyTasksProps> = ({ tasks }) => {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800 border-red-200';
-      case 'high': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-      case 'medium': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'low': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'urgent':
+        return 'border border-red-200 bg-red-50 text-red-800 dark:border-red-500/50 dark:bg-red-500/15 dark:text-red-100';
+      case 'high':
+        return 'border border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/50 dark:bg-emerald-500/15 dark:text-emerald-100';
+      case 'medium':
+        return 'border border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/50 dark:bg-blue-500/15 dark:text-blue-100';
+      case 'low':
+        return 'border border-gray-200 bg-gray-50 text-gray-800 dark:border-slate-600 dark:bg-slate-800/60 dark:text-slate-100';
+      default:
+        return 'border border-gray-200 bg-gray-50 text-gray-800 dark:border-slate-600 dark:bg-slate-800/60 dark:text-slate-100';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-gray-100 text-gray-800';
-      case 'in-progress': return 'bg-blue-100 text-blue-800';
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'overdue': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending':
+        return 'border border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-600 dark:bg-slate-800/70 dark:text-slate-100';
+      case 'in-progress':
+        return 'border border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/50 dark:bg-blue-500/15 dark:text-blue-100';
+      case 'completed':
+        return 'border border-green-200 bg-green-50 text-green-800 dark:border-emerald-500/50 dark:bg-emerald-500/15 dark:text-emerald-100';
+      case 'overdue':
+        return 'border border-red-200 bg-red-50 text-red-800 dark:border-red-500/50 dark:bg-red-500/15 dark:text-red-100';
+      default:
+        return 'border border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-600 dark:bg-slate-800/70 dark:text-slate-100';
+    }
+  };
+
+  const getTaskSurfaceClasses = (status: string) => {
+    switch (status) {
+      case 'overdue':
+        return 'border-red-200 bg-red-50/80 dark:border-red-500/60 dark:bg-red-500/10';
+      case 'completed':
+        return 'border-green-200 bg-green-50 dark:border-emerald-500/60 dark:bg-emerald-500/10';
+      case 'in-progress':
+        return 'border-blue-200 bg-blue-50/70 dark:border-blue-500/50 dark:bg-blue-500/10';
+      default:
+        return 'border-slate-200/80 bg-white/70 dark:border-slate-700 dark:bg-slate-900/40';
     }
   };
 
@@ -96,7 +123,7 @@ const DailyTasksCard: React.FC<DailyTasksProps> = ({ tasks }) => {
       </CardHeader>
       <CardContent>
         <div className="mb-4">
-          <div className="flex justify-between text-sm text-gray-600 mb-2">
+          <div className="mb-2 flex justify-between text-sm text-muted-foreground">
             <span>Progress: {completedTasks.length}/{tasks.length} completed</span>
             <span>{((completedTasks.length / tasks.length) * 100).toFixed(0)}%</span>
           </div>
@@ -105,11 +132,13 @@ const DailyTasksCard: React.FC<DailyTasksProps> = ({ tasks }) => {
         
         <div className="space-y-3 max-h-96 overflow-y-auto">
           {tasks.map((task) => (
-            <div key={task.id} className={`border rounded-lg p-3 ${
-              task.status === 'overdue' ? 'border-red-200 bg-red-50' : 
-              task.status === 'completed' ? 'border-green-200 bg-green-50' : 
-              'border-gray-200'
-            }`}>
+            <div
+              key={task.id}
+              className={cn(
+                'rounded-lg border p-3 text-sm shadow-sm transition-colors duration-200',
+                getTaskSurfaceClasses(task.status)
+              )}
+            >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-2">
                   {getTaskIcon(task.type)}
@@ -123,23 +152,23 @@ const DailyTasksCard: React.FC<DailyTasksProps> = ({ tasks }) => {
                   </Badge>
               </div>
               
-              <p className="text-xs text-gray-600 mb-2">{task.description}</p>
+              <p className="mb-2 text-xs text-muted-foreground">{task.description}</p>
               
               <div className="grid grid-cols-2 gap-2 text-xs mb-2">
                 <div>
-                  <span className="text-gray-500">Location:</span>
+                  <span className="text-muted-foreground/80">Location:</span>
                   <div className="font-medium">{task.location}</div>
                 </div>
                 <div>
-                  <span className="text-gray-500">Duration:</span>
+                  <span className="text-muted-foreground/80">Duration:</span>
                   <div className="font-medium">{task.estimatedTime} min</div>
                 </div>
                 <div>
-                  <span className="text-gray-500">Assigned:</span>
+                  <span className="text-muted-foreground/80">Assigned:</span>
                   <div className="font-medium">{format(new Date(task.assignedTime), 'HH:mm')}</div>
                 </div>
                 <div>
-                  <span className="text-gray-500">Due:</span>
+                  <span className="text-muted-foreground/80">Due:</span>
                   <div className={`font-medium ${
                     task.status === 'overdue' ? 'text-red-600' : ''
                   }`}>
@@ -149,7 +178,7 @@ const DailyTasksCard: React.FC<DailyTasksProps> = ({ tasks }) => {
               </div>
               
               {task.notes && (
-                <div className="text-xs text-gray-600 mb-2 p-2 bg-gray-100 rounded">
+                <div className="mb-2 rounded border border-border/60 bg-muted/40 p-2 text-xs text-muted-foreground">
                   <strong>Notes:</strong> {task.notes}
                 </div>
               )}
@@ -282,7 +311,7 @@ const CowStatusCard: React.FC<CowStatusProps> = ({ status }) => {
               </Badge>
             </div>
             
-            <div className="text-xs text-gray-600 pt-2 border-t">
+            <div className="text-xs text-muted-foreground pt-2 border-t border-border/50">
               <div>Last feeding: {format(new Date(status.lastFeedingTime), 'HH:mm')}</div>
               <div>Next feeding: {format(new Date(status.nextFeedingTime), 'HH:mm')}</div>
             </div>
@@ -320,7 +349,7 @@ const WorkLogCard: React.FC<WorkLogProps> = ({ logs }) => {
       case 'completed': return 'text-green-600';
       case 'partial': return 'text-yellow-600';
       case 'skipped': return 'text-red-600';
-      default: return 'text-gray-600';
+      default: return 'text-muted-foreground';
     }
   };
 
@@ -539,11 +568,6 @@ export const HelperDashboard: React.FC = () => {
         role="helper"
         title="Helper Dashboard"
         description="Syncing shift tasks and herd vitals…"
-        actions={
-          <Badge variant="secondary" className="rounded-full bg-green-100 text-green-800">
-            On duty
-          </Badge>
-        }
       >
         <DashboardSkeleton
           title="Helper Dashboard"
@@ -557,7 +581,7 @@ export const HelperDashboard: React.FC = () => {
   const completedTasks = tasks.filter((task) => task.status === 'completed').length;
   const pendingTasks = tasks.length - completedTasks;
   const feedingCoverage = Math.round((cowStatus.fedCows / cowStatus.totalCows) * 100);
-  const highlights = [
+  const highlights: Highlight[] = [
     {
       label: 'Tasks today',
       value: tasks.length,
@@ -582,11 +606,6 @@ export const HelperDashboard: React.FC = () => {
       role="helper"
       title="Helper Dashboard"
       description={`Good job, ${user?.name}! Keep up the great work taking care of our cows.`}
-      actions={
-        <Badge variant="secondary" className="rounded-full bg-green-100 text-green-800">
-          On duty
-        </Badge>
-      }
       highlights={highlights}
     >
       <div className="role-widget-grid helper-widget-grid grid grid-cols-1 gap-6 lg:grid-cols-3">

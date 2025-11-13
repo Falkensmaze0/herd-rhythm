@@ -9,7 +9,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode, useCa
 import { AuthUser, LoginCredentials, RegisterData, UserRole, UserPreferences, Permission } from '@/types';
 import { AuthService } from '@/services/AuthService';
 import { useToast } from '@/hooks/use-toast';
-import Router from 'next/router';
+import { useRouter } from 'next/navigation';
 
 
 interface AuthContextType {
@@ -37,6 +37,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const router = useRouter();
 
   const isAuthenticated = !!user;
 
@@ -56,12 +57,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Handle role-based navigation consistently
-  const navigateToUserHome = async (userRole: UserRole): Promise<void> => {
-    if (typeof window === 'undefined') return; // avoid server-side navigation
+  const navigateToUserHome = (userRole: UserRole): void => {
     const path = ROLE_HOME_ROUTE[userRole];
     if (path) {
       try {
-        await Router.replace(path);
+        router.replace(path);
       } catch (error) {
         // Fallback to window.location on navigation error
         window.location.href = path;
@@ -152,7 +152,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Navigate to role-specific route
       const path = ROLE_HOME_ROUTE[authUser.role];
       if (path) {
-        window.location.href = path;
+        try {
+          router.replace(path);
+        } catch (error) {
+          window.location.href = path;
+        }
       }
     } catch (error: unknown) {
       console.error('Login failed:', error);
@@ -197,10 +201,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         variant: 'default',
       });
       if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+        try {
+          router.replace('/login');
+        } catch (error) {
+          window.location.href = '/login';
+        }
       }
     }
-  }, [toast]);
+  }, [router, toast]);
 
   const register = async (data: RegisterData) => {
     try {

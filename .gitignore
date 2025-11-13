@@ -41,3 +41,4 @@ dist-ssr
 .next/cache/webpack/server-development/6.pack.gz
 .next/cache/webpack/server-development/5.pack.gz
 .next/cache/webpack/server-development/6.pack.gz
+storage/mail/*

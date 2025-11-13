@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Server } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
@@ -9,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { RoleDashboardLayout } from './RoleDashboardLayout';
+import type { Highlight } from './RoleDashboardLayout';
 import { DashboardSkeleton } from './DashboardSkeleton';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
@@ -241,7 +244,7 @@ export const AdminDashboard: React.FC = () => {
     );
   }
 
-  const highlights = [
+  const highlights: Highlight[] = [
     {
       label: 'Uptime',
       value: formatDuration(metricsData.uptimeSeconds),

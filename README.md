@@ -129,3 +129,87 @@ A scalable FastAPI microservice (`batman_llm_service`) powers the LLM backend. E
 - `LLM_apiKey`: Optional, if provider requires authentication
 
 See `batman_llm_service/README.md` for usage and deployment details.
+
+## Hybrid Mail Delivery (Approach 3)
+
+The project now ships with a hybrid local-delivery mail stack that implements **Approach 3: Hybrid Local Delivery Agent**. The stack is split into clearly defined layers so any component (LMTP handler, transport, API, UI) can be reimplemented without refactoring the rest of the system.
+
+### Architecture at a Glance
+
+| Layer | Tech | Notes |
+| --- | --- | --- |
+| Mail Transport | Postfix + `sendmail` shim | External SMTP still flows through Postfix. All local domains short-circuit to LMTP `/var/run/mailpipe.sock`. |
+| Local Delivery Service | `mailcore/lmtp_handler.py` (Python 3.11, `aiosmtpd`, `asyncpg`) | Receives LMTP input, parses MIME, persists to Postgres, pushes Redis Pub/Sub notifications. |
+| Storage | PostgreSQL via Prisma + `asyncpg` | New tables: `MailMessage`, `MailAttachment`, `MailEvent` with indexes on `(recipientId, isRead, createdAt)`. |
+| Application/API | Next.js App Router | REST endpoints under `/app/api/mail/*`, SSE route at `/api/ws/mail`, Prisma-backed service layer. |
+| Notification Layer | Redis Pub/Sub + SSE | LMTP handler and Next.js service publish to `user:<id>`. Browser subscribes via EventSource. |
+| Interfaces | `src/interfaces/mail/*.d.ts` + `mailcore/interfaces/*.py` | Contracts for `IMailStore`, `IMailTransport`, and `IMailNotifier` ensure language neutrality. |
+
+### API Surface
+
+| Route | Method | Description |
+| --- | --- | --- |
+| `/api/mail/send` | `POST` | Validate + send message. Local recipients short-circuit to DB/Redis; external recipients shell out to `sendmail`. |
+| `/api/mail/inbox` | `GET` | Fetch inbox/sent/archived/trash slices with unread filters. |
+| `/api/mail/[id]` | `GET`, `DELETE` | Retrieve or soft-delete a single message. |
+| `/api/mail/[id]/read` | `PATCH` | Toggle read/unread status. |
+| `/api/mail/search` | `GET` | Full text search via PostgreSQL `to_tsvector`. |
+| `/api/mail/unread_count` | `GET` | Quick unread + priority counts for UI badges. |
+| `/api/ws/mail` | `GET` (SSE) | Subscribes the browser to Redis Pub/Sub (`user:<id>`) for `new_mail` events. |
+
+### Setup & Tooling
+
+1. Copy `.env.example` ➜ `.env` and ensure `DATABASE_URL`, `REDIS_URL`, and `LOCAL_MAIL_DOMAIN` are set.
+2. Run the consolidated bootstrap script:
+
+   ```sh
+   ./setup.sh
+   ```
+
+   This installs Node deps, pushes + seeds Prisma schema, and provisions a Python virtualenv (`.venv-mailcore`) with LMTP requirements.
+
+3. Start services:
+
+   ```sh
+   npm run dev                                  # Next.js UI + API
+   source .venv-mailcore/bin/activate
+   python mailcore/lmtp_handler.py              # LMTP handler (listens on LMTP_SOCKET)
+   ```
+
+4. Optional smoke test for internal delivery:
+
+   ```sh
+   npm run mail:test
+   ```
+
+   The script sends a message from `manager-001` to `admin@farm.com` using the real service layer and asserts the admin inbox reflects it.
+
+### Postfix → LMTP integration
+
+Update `/etc/postfix/main.cf` to short-circuit the local domain:
+
+```cf
+virtual_transport = lmtp:unix:/var/run/mailpipe.sock
+virtual_mailbox_domains = farm.com
+```
+
+Add a service entry in `/etc/postfix/master.cf`:
+
+```cf
+lmtp      unix  -       -       n       -       -       lmtp
+  -o lmtp_overquota_warn_percent=80
+```
+
+Use `systemd` or `supervisord` to keep `mailcore/lmtp_handler.py` running so the socket is always available.
+
+### Front-end Inbox Experience
+
+The `role=menuitem` inbox now surfaces the full mail client:
+
+- Role-aware copy, highlights, and automation summaries pulled from `src/data/roleInboxCopy.ts`.
+- Split-pane UI with animated message list, keyboard-friendly selection, inline search, and saved view buttons.
+- Slide-out composer (React Hook Form) with automatic detection of local vs external recipients.
+- Attachment previews, contextual actions (mark read/unread, delete), and live unread digest cards.
+- Background SSE stream (`useMailStream`) that invalidates React Query caches and surfaces toasts on delivery events.
+
+Each piece relies on the shared `useMail` hook, ensuring the UI stays synchronized with the REST endpoints and Redis stream without manual state wrangling.

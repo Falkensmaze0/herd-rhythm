@@ -278,6 +278,64 @@
     outline-offset: 2px;
   }
 
+  .role-profile-control {
+    width: auto;
+    padding: 0 0.35rem 0 0;
+    gap: 0.4rem;
+  }
+
+  .role-profile-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.9), hsl(var(--primary) / 0.6));
+    color: hsl(var(--primary-foreground));
+    box-shadow: inset 0 0 0 1px hsl(var(--border) / 0.4);
+  }
+
+  .role-profile-avatar--menu {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.8rem;
+  }
+
+  .profile-identity {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .profile-identity__photo {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 1.25rem;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px hsl(var(--border) / 0.4);
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.2), hsl(var(--primary) / 0.05));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: hsl(var(--primary));
+  }
+
+  .profile-identity__photo--fallback span {
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+  }
+
+  .profile-identity__photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
   .role-hero__heading {
     display: flex;
     gap: 1rem;

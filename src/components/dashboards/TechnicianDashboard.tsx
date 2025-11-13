@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +28,7 @@ import {
 import { format, addDays, addHours } from 'date-fns';
 import { DashboardSkeleton } from './DashboardSkeleton';
 import { RoleDashboardLayout } from './RoleDashboardLayout';
+import type { Highlight } from './RoleDashboardLayout';
 
 interface BreedingStatsProps {
   stats: {
@@ -566,7 +569,7 @@ export const TechnicianDashboard: React.FC = () => {
     );
   }
 
-  const highlights = [
+  const highlights: Highlight[] = [
     {
       label: 'Pending AI',
       value: breedingStats.pendingAI,

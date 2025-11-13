@@ -1,15 +1,25 @@
-import { Prisma, PrismaClient } from '@prisma/client';
+import { MailFolder, Prisma, PrismaClient, UserRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 import { mockCows, mockReminders, predefinedSyncMethods } from '../src/data/mockData';
 import { mockUsers } from '../src/data/mockUsers';
+import { mockMailMessages } from '../src/data/mockMail';
+import { buildDefaultUserSettings } from '../src/lib/userSettings/defaultSettings';
 
 const prisma = new PrismaClient();
 
+interface SeededUser {
+  id: string;
+  role: UserRole;
+  email: string;
+  name: string;
+}
+
 async function seedUsers() {
+  const createdUsers: SeededUser[] = [];
   for (const user of mockUsers) {
     const hashedPassword = await bcrypt.hash(user.password, 12);
-    await prisma.user.create({
+    const created = await prisma.user.create({
       data: {
         id: user.id,
         name: user.name,
@@ -24,7 +34,9 @@ async function seedUsers() {
         updatedAt: new Date(),
       },
     });
+    createdUsers.push({ id: created.id, role: created.role, email: created.email, name: created.name });
   }
+  return createdUsers;
 }
 
 type StepIdMap = Record<string, string>;
@@ -126,18 +138,83 @@ async function seedReminders(methodMap: SyncMethodSeedMap) {
 
 async function main() {
   // Clean up existing data
+  await prisma.mailEvent.deleteMany();
+  await prisma.mailAttachment.deleteMany();
+  await prisma.mailMessage.deleteMany();
   await prisma.reminder.deleteMany();
   await prisma.syncStep.deleteMany();
   await prisma.syncMethod.deleteMany();
   await prisma.cow.deleteMany();
   await prisma.session.deleteMany();
+  await prisma.userSetting.deleteMany();
   await prisma.user.deleteMany();
 
   // Seed all data
-  await seedUsers();
+  const users = await seedUsers();
+  await Promise.all(
+    users.map(({ id, role }) =>
+      prisma.userSetting.create({
+        data: {
+          userId: id,
+          ...buildDefaultUserSettings(role),
+        },
+      })
+    )
+  );
   const syncMethodMap = await seedSyncMethods();
   await seedCows();
   await seedReminders(syncMethodMap);
+  await seedMail(users);
+}
+
+async function seedMail(users: SeededUser[]) {
+  const emailToId = users.reduce<Record<string, SeededUser>>((acc, user) => {
+    acc[user.email.toLowerCase()] = user;
+    return acc;
+  }, {});
+
+  for (const message of mockMailMessages) {
+    const sender = emailToId[message.senderEmail.toLowerCase()];
+    const recipient = emailToId[message.recipientEmail.toLowerCase()];
+    if (!sender || !recipient) {
+      console.warn('Skipping mail seed – sender or recipient missing', message.subject);
+      continue;
+    }
+
+    const createdMessage = await prisma.mailMessage.create({
+      data: {
+        senderId: sender.id,
+        recipientId: recipient.id,
+        subject: message.subject,
+        body: message.body,
+        bodyHtml: message.bodyHtml,
+        folder: message.folder ?? (message.direction === 'outbound' ? MailFolder.sent : MailFolder.inbox),
+        direction: message.direction ?? 'internal',
+        isRead: message.isRead ?? false,
+        metadata: message.metadata ?? Prisma.JsonNull,
+      },
+    });
+
+    if (message.attachments?.length) {
+      await prisma.mailAttachment.createMany({
+        data: message.attachments.map((attachment) => ({
+          messageId: createdMessage.id,
+          fileName: attachment.fileName,
+          fileUrl: attachment.fileUrl,
+          mimeType: attachment.mimeType,
+          size: attachment.size,
+        })),
+      });
+    }
+
+    await prisma.mailEvent.create({
+      data: {
+        messageId: createdMessage.id,
+        eventType: 'received',
+        description: 'Message seeded for bootstrap data',
+      },
+    });
+  }
 }
 
 main()

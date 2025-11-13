@@ -76,6 +76,9 @@ model User {
   sessions             Session[]
   systemLogs           SystemLog[]
   notifications        UserNotification[]
+  settings             UserSetting?
+  sentMail             MailMessage[]      @relation("MailMessageSender")
+  receivedMail         MailMessage[]      @relation("MailMessageRecipient")
 }
 
 model Session {
@@ -166,6 +169,73 @@ model UserNotification {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model UserSetting {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  theme        String   @default("system")
+  accentColor  String   @default("emerald")
+  density      String   @default("comfortable")
+  layoutPreset String?
+  inboxView    String   @default("all")
+  notifications Json?
+  profile       Json?
+  widgetPreferences Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MailMessage {
+  id           String        @id @default(cuid())
+  senderId     String
+  recipientId  String
+  subject      String
+  body         String?       @db.Text
+  bodyHtml     String?       @db.Text
+  isRead       Boolean       @default(false)
+  folder       MailFolder    @default(inbox)
+  direction    MailDirection @default(internal)
+  isDeleted    Boolean       @default(false)
+  metadata     Json?
+  externalId   String?
+  lmtpMessageId String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  attachments  MailAttachment[]
+  events       MailEvent[]
+  sender       User          @relation("MailMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient    User          @relation("MailMessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, isRead, createdAt])
+  @@index([senderId, createdAt])
+}
+
+model MailAttachment {
+  id          String   @id @default(cuid())
+  messageId   String
+  fileName    String
+  fileUrl     String
+  mimeType    String?
+  size        Int?
+  createdAt   DateTime @default(now())
+  message     MailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+model MailEvent {
+  id          String        @id @default(cuid())
+  messageId   String
+  actorId     String?
+  eventType   MailEventType
+  description String?
+  payload     Json?
+  createdAt   DateTime      @default(now())
+  message     MailMessage   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId, createdAt])
+}
+
 model Reminder {
   id                String           @id @default(cuid())
   cowId             String
@@ -232,6 +302,30 @@ enum UserRole {
   technician
   helper
   office
+}
+
+enum MailFolder {
+  inbox
+  sent
+  archived
+  trash
+}
+
+enum MailDirection {
+  internal
+  outbound
+  inbound
+}
+
+enum MailEventType {
+  received
+  delivered
+  read
+  unread
+  deleted
+  restored
+  sent
+  bounced
 }
 
 enum LogLevel {
